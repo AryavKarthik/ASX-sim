@@ -29,14 +29,85 @@ export type LiveStatus = {
   error: string | null;
 };
 
+export type OrderView = {
+  id: string;
+  symbol: string;
+  side: "buy" | "sell";
+  type: "market" | "limit";
+  quantity: number;
+  limit_price: string | null;
+  created_at: string;
+  session: string;
+  status: "queued" | "working" | "filled" | "cancelled" | "expired" | "rejected";
+  auction: "open" | "close" | null;
+  filled: number;
+  average_price: string | null;
+  fees: string;
+  message: string | null;
+};
+
+export type FillView = {
+  order_id: string;
+  symbol: string;
+  side: "buy" | "sell";
+  quantity: number;
+  price: string;
+  fee: string;
+  value: string;
+  time: string;
+  liquidity: string;
+};
+
+export type PositionView = {
+  symbol: string;
+  quantity: number;
+  average_price: string;
+  last_price: string | null;
+  market_value: string | null;
+  unrealised: string | null;
+  unrealised_pct: number | null;
+  realised: string;
+};
+
+export type AccountView = {
+  starting_cash: string;
+  cash: string;
+  buying_power: string;
+  market_value: string;
+  equity: string;
+  unrealised: string;
+  realised: string;
+  fees: string;
+  net_pnl: string;
+  positions: PositionView[];
+  orders: OrderView[];
+  fills: FillView[];
+  brokerage: { flat: string; percent: string; minimum: string };
+};
+
+export type CommandResult =
+  | { type: "result"; request_id: string; action: string; ok: true; order?: OrderView }
+  | { type: "result"; request_id: string; action: string; ok: false; error: string };
+
+export type OrderCommand = {
+  symbol: string;
+  side: "buy" | "sell";
+  type: "market" | "limit";
+  quantity: number;
+  limit_price?: string;
+};
+
 export type LiveMessage =
   | {
       type: "snapshot";
       source: "live" | "demo";
       session_day: string | null;
       symbols: Record<string, { quote: Quote | null; candles: Bar[] }>;
+      account: AccountView;
     }
   | { type: "tick"; symbol: string; live: boolean; quote: Quote; candle: Bar | null }
+  | { type: "account"; account: AccountView; fills: FillView[] }
+  | CommandResult
   | ({ type: "status" } & LiveStatus);
 
 export type Defaults = {

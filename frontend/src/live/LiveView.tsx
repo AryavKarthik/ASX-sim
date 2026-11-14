@@ -3,7 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { type Bar, fetchDays } from "../api";
 import { PriceChart, type PriceChartHandle } from "../components/PriceChart";
 import { PHASE_HELP, PHASE_LABELS, clockTime, formatDay, formatPrice } from "../format";
-import type { Defaults, FeedSource, LiveStatus } from "./types";
+import { AccountPanel } from "./AccountPanel";
+import { ActivityTabs } from "./ActivityTabs";
+import { OrderTicket } from "./OrderTicket";
+import type { Defaults, FeedSource, LiveStatus, OrderCommand } from "./types";
 import { useLiveFeed } from "./useLiveFeed";
 import { Watchlist, displayQuote } from "./Watchlist";
 
@@ -100,7 +103,13 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selected]);
 
-  const { status, quotes, connected, sessionDay } = feed;
+  const { status, quotes, connected, sessionDay, account, command } = feed;
+  const placeOrder = useCallback((order: OrderCommand) => command("order", order), [command]);
+  const cancelOrder = useCallback((orderId: string) => command("cancel", { order_id: orderId }), [command]);
+  const resetAccount = useCallback(
+    (startingCash: string) => command("reset_account", { starting_cash: startingCash }),
+    [command],
+  );
   const quote = quotes[selected];
   const shown = displayQuote(quote, feed.candlesFor(selected));
   const up = (shown.pct ?? 0) >= 0;
@@ -213,7 +222,22 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
             </>
           )}
         </footer>
+
+        <ActivityTabs account={account} onSelect={setSelected} onCancel={cancelOrder} onOrder={placeOrder} />
       </section>
+
+      <aside className="trade-column">
+        <OrderTicket
+          symbol={selected}
+          name={names[selected] ?? ""}
+          quote={quote}
+          lastPrice={shown.price}
+          account={account}
+          phase={phase}
+          onSubmit={placeOrder}
+        />
+        <AccountPanel account={account} source={source.kind} onReset={resetAccount} />
+      </aside>
     </div>
   );
 }
