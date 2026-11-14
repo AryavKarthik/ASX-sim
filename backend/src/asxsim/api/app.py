@@ -1,7 +1,7 @@
-"""FastAPI app: lists recorded days and stocks, and streams past-day replays over WebSockets.
+"""FastAPI app for ASX-sim.
 
-Past-day replay is the secondary feature; live trading on the delayed market (ADR 0007) is
-the core and is being added next.
+- Live mode (the core, ADR 0007): see `asxsim.api.live`, streaming the delayed market.
+- Past-day replay (secondary): the /api/replay endpoints below.
 
 Run locally:  uv run uvicorn asxsim.api.app:app --reload   (from backend/)
 Interactive API docs are then at http://127.0.0.1:8000/docs
@@ -15,39 +15,32 @@ import time
 import uuid
 from collections import OrderedDict
 from datetime import date
-from functools import cache
 from typing import Annotated, Any, Literal
 
 import pandas as pd
 from fastapi import Depends, FastAPI, HTTPException, Query, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel, Field
 
+from asxsim.api.deps import get_store
+from asxsim.api.live import router as live_router
 from asxsim.data.store import LocalBarStore, NoDataError
-from asxsim.data.universe import BENCHMARKS, load_asx200
+from asxsim.data.universe import BENCHMARKS, security_names
 from asxsim.engine.replay import ReplaySession, ReplayState
 from asxsim.market.calendar import SYDNEY
-from asxsim.settings import bars_1m_dir
 
 TICK_SECONDS = 0.25  # how often a playing replay pushes updates to the browser
 MAX_SESSIONS = 20
 
 app = FastAPI(title="ASX-sim API", version="0.1.0")
+app.include_router(live_router)
 
-
-@cache
-def get_store() -> LocalBarStore:
-    return LocalBarStore(bars_1m_dir())
-
+__all__ = ["app", "get_store"]
 
 StoreDep = Annotated[LocalBarStore, Depends(get_store)]
 
 _sessions: OrderedDict[str, ReplaySession] = OrderedDict()
 
-_NAMES: dict[str, str] = {s.code: s.name for s in load_asx200()} | {
-    "XJO": "S&P/ASX 200 Index",
-    "VAS": "Vanguard Australian Shares ETF",
-    "STW": "SPDR S&P/ASX 200 ETF",
-}
+_NAMES: dict[str, str] = security_names()
 
 
 # ---------- response shapes ----------
