@@ -56,6 +56,18 @@ def load_asx200() -> list[Security]:
     return [Security(code=r["code"], name=r["name"], sector=r["sector"]) for r in rows]
 
 
+_BENCHMARK_NAMES = {
+    "XJO": "S&P/ASX 200 Index",
+    "VAS": "Vanguard Australian Shares ETF",
+    "STW": "SPDR S&P/ASX 200 ETF",
+}
+
+
+def security_names() -> dict[str, str]:
+    """Display names for every code we know: ASX 200 members plus benchmarks."""
+    return {s.code: s.name for s in load_asx200()} | _BENCHMARK_NAMES
+
+
 def recording_universe() -> dict[str, str]:
     """Map every app code we record to its Yahoo symbol: the ASX 200 plus benchmarks."""
     universe = {s.code: s.yahoo_symbol for s in load_asx200()}
