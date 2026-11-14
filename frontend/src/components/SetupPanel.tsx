@@ -54,8 +54,8 @@ export function SetupPanel({ onStart }: { onStart: (session: StartedSession) => 
       <h1>Look back at a past day</h1>
       <p className="muted">
         Review a recorded trading day minute by minute, from just before the open. You only see
-        what had happened up to the replay clock. (Live trading on today&apos;s delayed market is
-        the main mode and is being built next.)
+        what had happened up to the replay clock. (For today&apos;s market, use the Live market
+        tab.)
       </p>
 
       <label>
