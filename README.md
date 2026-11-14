@@ -124,6 +124,10 @@ npm run dev
 Then open <http://localhost:5173>. On Windows, `scripts\dev.ps1` does all of this in one
 step. The API's interactive docs are at <http://127.0.0.1:8000/docs>.
 
+The app opens on the **Live market (delayed)** tab. During ASX trading hours (about 10:20am
+to 4:30pm Sydney time with the delay) your watchlist streams live. Outside those hours it
+shows the last session, and **Try the demo** plays a recorded day as if it were live.
+
 ## Development
 
 | Check | Command (from `backend/`) |
@@ -143,7 +147,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Day 1:** repo, CI, daily 1-minute data recorder
 - [x] **Day 2:** ASX market rules: tick sizes, trading calendar, trading phases and auctions
 - [x] **Day 3:** first clickable app (currently a past-day replay viewer): chart, clock, time gate, WebSocket stream
-- [ ] **Next: live delayed market (top priority):** stream Yahoo's delayed prices as they update, a live chart and quote that tick with every price, and a delayed-market clock and phases
+- [x] **Live delayed market (top priority):** watchlist of up to 20 stocks streaming Yahoo's delayed prices as they update (with a polling fallback), live candles and quotes that tick with every price, measured delay, delayed-market clock and phases, and a demo mode for outside market hours. *To verify on a live trading session: real update frequency and delay.*
 - [ ] **Then: trading on the live market:** order ticket, realistic fills against the delayed feed, brokerage, cash, holdings and P&L → `v0.1`
 - [ ] **Week 2:** full order types, halts, T+2, journal, analytics, more indicators
 - [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`

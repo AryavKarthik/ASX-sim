@@ -35,6 +35,21 @@ the real market does, and as long as ASX-sim is the only place the trader watche
    2. trading against it (order ticket, fills, account),
    3. journal, analytics and the AI coach.
 
+## Implementation notes (first version)
+
+- `asxsim.live.feeds`: `YahooStreamFeed` (main), `YahooPollingFeed` (fallback),
+  `FallbackFeed` (switches only if the stream fails, or goes silent while the delayed market
+  should be trading), and `DemoFeed` (a recorded day as if live, labelled "Demo").
+- `asxsim.live.market.LiveMarket` builds 1-minute candles from ticks and measures the delay
+  as the median of (time received − time traded).
+- **Stale snapshots:** on subscribing, Yahoo sends each symbol's last known price, which at
+  the weekend is Friday's close. The first version treated that as a live trade and reported
+  a "delay" of 29 hours. Updates more than an hour old now refresh the quote but are ignored
+  for the delay and for "streaming" status. Demo markets trust any lag.
+- The browser holds a watchlist of up to 20 codes (remembered locally) and streams them over
+  `WS /api/live/ws`. Switching stocks is instant because every symbol's candles are already
+  in memory.
+
 ## Consequences
 
 - Practice happens during real market hours (about 10:20am to 4:30pm Sydney time with the
