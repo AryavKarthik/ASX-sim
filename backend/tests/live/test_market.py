@@ -82,6 +82,17 @@ def test_demo_markets_trust_any_lag() -> None:
     assert market.market_now(much_later) == TRADE
 
 
+def test_liquidity_estimate_uses_the_busier_of_last_and_current_minute() -> None:
+    market = LiveMarket(["BHP"])
+    minute = TRADE.replace(second=0)
+    market.seed_candles("BHP", [Candle(minute - timedelta(minutes=1), 59, 59, 59, 59, 800)])
+    assert market.previous_minute_volume("BHP", TRADE) == 800
+
+    market.on_tick(tick(59.0, TRADE + timedelta(seconds=5), last_size=5000), TRADE)
+    assert market.previous_minute_volume("BHP", TRADE + timedelta(seconds=10)) == 5000
+    assert LiveMarket(["BHP"]).previous_minute_volume("BHP", TRADE) is None
+
+
 def test_ignores_symbols_not_on_the_watchlist() -> None:
     market = LiveMarket(["BHP"])
     assert market.on_tick(Tick("CBA", 150.0, TRADE), TRADE) is None

@@ -24,3 +24,12 @@ def data_dir() -> Path:
 
 def bars_1m_dir() -> Path:
     return data_dir() / "bars_1m"
+
+
+def state_dir() -> Path:
+    """Where your simulated account is saved. Kept outside the repo so it's never committed.
+
+    Set ASXSIM_STATE_DIR to override; defaults to ~/.asxsim.
+    """
+    configured = os.environ.get("ASXSIM_STATE_DIR")
+    return Path(configured).expanduser().resolve() if configured else Path.home() / ".asxsim"
