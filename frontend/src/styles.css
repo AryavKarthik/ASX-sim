@@ -1,0 +1,309 @@
+:root {
+  --bg: #0b1017;
+  --panel: #121923;
+  --border: #222c39;
+  --text: #e6ebf2;
+  --muted: #8b96a5;
+  --accent: #3b82f6;
+  --up: #26a69a;
+  --down: #ef5350;
+  --warn: #f5a524;
+  color-scheme: dark;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  padding: 16px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+}
+
+.brand span {
+  color: var(--accent);
+}
+
+.badge {
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #1d2a3d;
+  color: #9cc2ff;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.up {
+  color: var(--up);
+}
+
+.down {
+  color: var(--down);
+}
+
+.error {
+  color: var(--down);
+}
+
+.notice {
+  color: var(--warn);
+}
+
+button {
+  font: inherit;
+  color: var(--text);
+  background: #1a2330;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  border-color: #3a4a5f;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+button.ghost {
+  background: transparent;
+}
+
+button.active {
+  background: #1d2a3d;
+  border-color: var(--accent);
+  color: #9cc2ff;
+}
+
+/* ---------- setup ---------- */
+
+.setup {
+  max-width: 460px;
+  margin: 48px auto;
+  padding: 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setup h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.setup p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+select,
+input {
+  font: inherit;
+  font-size: 15px;
+  color: var(--text);
+  background: #0e141c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.hint {
+  min-height: 1.2em;
+  color: var(--text);
+}
+
+/* ---------- replay ---------- */
+
+.replay {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.replay-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  padding: 14px 18px;
+}
+
+.instrument {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.code {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.quote {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.clock-block {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clock {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.phase {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #2a2f38;
+  color: var(--muted);
+  cursor: help;
+}
+
+.phase-open {
+  background: #12352f;
+  color: #4fd1b5;
+}
+
+.phase-pre_open,
+.phase-pre_cspa {
+  background: #3a2f12;
+  color: var(--warn);
+}
+
+.phase-opening_auction,
+.phase-closing_auction {
+  background: #1d2a3d;
+  color: #9cc2ff;
+}
+
+.chart-card {
+  position: relative;
+  height: min(62vh, 620px);
+  padding: 8px;
+}
+
+.chart {
+  width: 100%;
+  height: 100%;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  padding: 16px;
+  pointer-events: none;
+}
+
+.overlay strong {
+  font-size: 20px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.speeds {
+  display: flex;
+  gap: 4px;
+}
+
+.hint-keys {
+  font-size: 12px;
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .clock-block {
+    margin-left: 0;
+  }
+  .hint-keys {
+    display: none;
+  }
+}
