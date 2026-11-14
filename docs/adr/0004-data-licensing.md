@@ -10,8 +10,9 @@ and its terms allow personal, non-commercial use but not redistribution. `yfinan
 unofficial client and is not affiliated with Yahoo. This repository is public, and a public
 website showing ASX prices would count as redistribution.
 
-Yahoo also only serves about 30 days of 1-minute history, so intraday replay needs data to
-be recorded continuously.
+Yahoo also only serves about 30 days of 1-minute history. Charts showing earlier days'
+intraday moves, and the secondary past-day replay feature, need that history recorded
+continuously. (Live trading itself streams delayed prices directly; see ADR 0007.)
 
 ## Decision
 

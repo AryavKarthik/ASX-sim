@@ -4,10 +4,12 @@
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-**A realistic ASX trading simulator for learning to day trade, with an AI coach.**
+**A realistic ASX day-trading simulator on the live market, with an AI coach.**
 
-Pick a stock and a past trading day, and ASX-sim replays it minute by minute without
-showing you the future. You trade under the same rules as the real market:
+Trade ASX shares **during today's trading session**, on free market data that runs about
+20 minutes behind the real exchange. Prices stream in continuously, every time a new
+(delayed) price is published, and your simulated orders fill against that live feed under
+the same rules as the real market:
 - the pre-open phase and the opening single price auction,
 - ASX tick sizes and bid/ask spreads,
 - liquidity limits and partial fills,
@@ -22,17 +24,27 @@ coach that challenges your reasoning instead of handing out tips.
 
 ---
 
-## Why this exists
+## How the 20-minute delay works
 
-Free ASX prices are delayed about 20 minutes, which makes them useless for practising day
-trading. Real-time feeds cost money. ASX-sim works around this with **intraday replay**:
-real historical 1-minute bars, released one at a time by a simulated clock, so practice
-sessions feel live and are honest about what you could have known.
+Real-time ASX data costs money. Free data (Yahoo Finance) is delayed by about 20 minutes but
+still updates continuously. ASX-sim embraces that: **the simulator's market is the real ASX
+running 20 minutes behind.**
 
-## Planned features
+- If you only watch prices inside ASX-sim, trading feels live. At 10:20am your time you see
+  the 10:00 open, and every price change arrives as it is published.
+- Your orders are matched against the prices as they arrive, in order, so you can never act
+  on a price before the market "reached" it.
+- Market phases (pre-open, opening auction, closing auction) follow the same delayed clock.
+- The data layer is swappable. Plugging in a real-time feed later (for example Interactive
+  Brokers) removes the delay without changing the rest of the app.
 
-- **Three modes, one engine:** intraday replay, daily replay (e.g. step through 2020
-  day by day), and live mode on delayed data.
+## Features
+
+**Core: live day trading on delayed data**
+- A streaming feed of delayed prices, updated on every new price (not once a minute),
+  with a 1-minute polling fallback if the stream drops.
+- A live candlestick chart and quote that update tick by tick, plus a delayed-market clock and
+  phase badge.
 - **Realistic execution:**
   - market, limit, stop, stop-limit and trailing-stop orders; good-for-day or good-till-cancelled,
   - fills modelled from real volume, with participation caps and price impact.
@@ -47,31 +59,39 @@ sessions feel live and are honest about what you could have known.
   - equity curve vs the ASX 200,
   - win rate, profit factor, expectancy, max drawdown, Sharpe,
   - performance broken down by setup.
-- **AI coach (Claude):** knows your chart, positions and journal. In replay it is technically
-  unable to see the future.
+- **AI coach (Claude):** knows your chart, positions and journal, and coaches you during the
+  session and afterwards.
+
+**Secondary: look back at past days**
+- Replay a recorded past trading day minute by minute, to review what happened or practise
+  outside market hours. It uses a replay clock and a time gate so it never shows the future.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-    UI["React + TypeScript UI<br/>charts · order ticket · journal · coach"] <-->|REST + WebSocket| API[FastAPI]
-    API --> Replay["Replay engine<br/>(simulated clock)"]
-    Replay --> Fill["Fill engine<br/>spread · liquidity · auctions"]
+    UI["React + TypeScript UI<br/>live chart · order ticket · journal · coach"] <-->|REST + WebSocket| API[FastAPI]
+    API --> Live["Live session<br/>delayed-market clock"]
+    API -.-> Replay["Past-day replay<br/>(secondary)"]
+    Live & Replay --> Fill["Fill engine<br/>spread · liquidity · auctions"]
     Fill --> Ledger["Account ledger<br/>cash · lots · T+2 · fees"]
     Ledger --> Analytics
     API --> Coach["AI coach"] --> Claude[(Claude API)]
-    Replay & Coach --> Gate["Time gate<br/>no data after clock.now"]
-    Gate --> Providers["Data providers<br/>Yahoo · recorded Parquet · synthetic"]
+    Live --> Feed["Delayed price stream<br/>Yahoo (swappable)"]
+    Replay --> Store["Recorded 1-minute bars"]
 ```
 
 Key design decisions are recorded as [Architecture Decision Records](docs/adr/).
+[ADR 0007](docs/adr/0007-live-delayed-trading-is-the-core.md) explains the focus on live
+delayed trading.
 
 ## Market data and licensing
 
 ASX-sim's **code** is open source (MIT). **Market data is never committed or published.**
-Prices come from Yahoo Finance via `yfinance` for personal, non-commercial use. A scheduled
-job records 1-minute bars into a *private* repository, because Yahoo only keeps about 30 days
-of 1-minute history. See [ADR 0004](docs/adr/0004-data-licensing.md).
+Prices come from Yahoo Finance via `yfinance` for personal, non-commercial use: a live
+stream of delayed prices for trading, plus a scheduled job that records each day's 1-minute
+bars into a *private* repository for charts and past-day review. See
+[ADR 0004](docs/adr/0004-data-licensing.md).
 
 ## Getting started
 
@@ -120,15 +140,17 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## Roadmap
 
-- [x] **Day 1:** repo, CI, 1-minute data recorder
+- [x] **Day 1:** repo, CI, daily 1-minute data recorder
 - [x] **Day 2:** ASX market rules: tick sizes, trading calendar, trading phases and auctions
-- [x] **Day 3:** first clickable app: replay a real trading day as a live chart (clock, time gate, WebSocket stream)
-- [ ] **Week 1:** core engine (calendar, ticks, clock, fills, ledger) and intraday replay MVP → `v0.1`
-- [ ] **Week 2:** full order types, auctions, halts, T+2, journal, analytics
-- [ ] **Week 3:** AI coach, daily replay, live mode, watchlists → `v1.0`
-- [ ] **Later:** short selling and margin, franking credits, drawing tools, ASX options
+- [x] **Day 3:** first clickable app (currently a past-day replay viewer): chart, clock, time gate, WebSocket stream
+- [ ] **Next: live delayed market (top priority):** stream Yahoo's delayed prices as they update, a live chart and quote that tick with every price, and a delayed-market clock and phases
+- [ ] **Then: trading on the live market:** order ticket, realistic fills against the delayed feed, brokerage, cash, holdings and P&L → `v0.1`
+- [ ] **Week 2:** full order types, halts, T+2, journal, analytics, more indicators
+- [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`
+- [ ] **Secondary:** trading inside past-day replay, daily replay over longer periods
+- [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options
 
 ## License
 
-[MIT](LICENSE) © 2026 Aryav Karthik. Chart rendering will use
+[MIT](LICENSE) © 2026 Aryav Karthik. Chart rendering uses
 [TradingView Lightweight Charts](https://www.tradingview.com/lightweight-charts/) (Apache-2.0).
