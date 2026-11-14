@@ -75,17 +75,34 @@ of 1-minute history. See [ADR 0004](docs/adr/0004-data-licensing.md).
 
 ## Getting started
 
-Requires [uv](https://docs.astral.sh/uv/). It installs the right Python version automatically.
+Requires [uv](https://docs.astral.sh/uv/) (it installs the right Python version
+automatically) and [Node.js](https://nodejs.org/) 20+.
+
+**1. Get some market data.** Record the last week of 1-minute bars for a few stocks:
 
 ```bash
 git clone https://github.com/AryavKarthik/ASX-sim.git
 cd ASX-sim/backend
 uv sync
-uv run pytest
-
-# Record the last week of 1-minute bars for a few stocks into ./data
-uv run python -m asxsim.data.recorder --out ../data/bars_1m --symbols BHP CBA CSL
+uv run python -m asxsim.data.recorder --out ../../ASX-sim-data/bars_1m --symbols BHP CBA CSL
 ```
+
+By default the app reads data from an `ASX-sim-data` folder next to the repo. Set
+`ASXSIM_DATA_DIR` to use somewhere else.
+
+**2. Run the app.** Start the backend and the frontend in two terminals:
+
+```bash
+# terminal 1, from backend/
+uv run uvicorn asxsim.api.app:app --reload --port 8000
+
+# terminal 2, from frontend/
+npm install
+npm run dev
+```
+
+Then open <http://localhost:5173>. On Windows, `scripts\dev.ps1` does all of this in one
+step. The API's interactive docs are at <http://127.0.0.1:8000/docs>.
 
 ## Development
 
@@ -105,6 +122,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
 - [x] **Day 1:** repo, CI, 1-minute data recorder
 - [x] **Day 2:** ASX market rules: tick sizes, trading calendar, trading phases and auctions
+- [x] **Day 3:** first clickable app: replay a real trading day as a live chart (clock, time gate, WebSocket stream)
 - [ ] **Week 1:** core engine (calendar, ticks, clock, fills, ledger) and intraday replay MVP → `v0.1`
 - [ ] **Week 2:** full order types, auctions, halts, T+2, journal, analytics
 - [ ] **Week 3:** AI coach, daily replay, live mode, watchlists → `v1.0`

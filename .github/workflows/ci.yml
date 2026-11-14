@@ -41,6 +41,27 @@ jobs:
       - name: Test
         run: uv run pytest --cov=asxsim --cov-report=term-missing
 
+  frontend:
+    name: Frontend (types, build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check and build
+        run: npm run build
+
   secrets:
     name: Secret scan
     runs-on: ubuntu-latest
