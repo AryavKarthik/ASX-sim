@@ -1,6 +1,7 @@
 # 6. A replay clock and a single time gate prevent look-ahead
 
-- **Status:** accepted
+- **Status:** accepted. Scope narrowed by [ADR 0007](0007-live-delayed-trading-is-the-core.md):
+  replay is now the secondary past-day feature, and live delayed trading is the core.
 - **Date:** 2026-11-14
 
 ## Context
