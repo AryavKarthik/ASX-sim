@@ -8,7 +8,7 @@
 
 Pick a stock and a past trading day, and ASX-sim replays it minute by minute without
 showing you the future. You trade under the same rules as the real market:
-- the pre-open phase and the staggered alphabetical opening auction,
+- the pre-open phase and the opening single price auction,
 - ASX tick sizes and bid/ask spreads,
 - liquidity limits and partial fills,
 - brokerage and T+2 settlement,
@@ -36,8 +36,8 @@ sessions feel live and are honest about what you could have known.
 - **Realistic execution:**
   - market, limit, stop, stop-limit and trailing-stop orders; good-for-day or good-till-cancelled,
   - fills modelled from real volume, with participation caps and price impact.
-- **ASX market structure:** trading calendar and public holidays, pre-open, staggered open,
-  closing single price auction, trading halts.
+- **ASX market structure:** trading calendar and public holidays, pre-open, opening and
+  closing single price auctions with the ASX's randomised timing, trading halts.
 - **Account mechanics:** cash vs settled cash (T+2), average cost, realised and unrealised
   P&L, configurable brokerage, dividends and splits.
 - **Charts:** candlesticks from 1-minute to monthly, volume, SMA/EMA, VWAP, RSI, MACD,
@@ -104,6 +104,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 ## Roadmap
 
 - [x] **Day 1:** repo, CI, 1-minute data recorder
+- [x] **Day 2:** ASX market rules: tick sizes, trading calendar, trading phases and auctions
 - [ ] **Week 1:** core engine (calendar, ticks, clock, fills, ledger) and intraday replay MVP → `v0.1`
 - [ ] **Week 2:** full order types, auctions, halts, T+2, journal, analytics
 - [ ] **Week 3:** AI coach, daily replay, live mode, watchlists → `v1.0`
