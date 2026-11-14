@@ -39,6 +39,7 @@ class TickUpdate:
     quote: Tick
     candle: Candle | None  # the candle this trade landed in (None if it arrived too late)
     live: bool  # False for stale snapshots (e.g. last Friday's close sent on a weekend)
+    volume: int = 0  # shares traded in this update
 
 
 class LiveMarket:
@@ -59,6 +60,29 @@ class LiveMarket:
     @property
     def symbols(self) -> list[str]:
         return list(self._states)
+
+    def watch(self, symbols: list[str]) -> list[str]:
+        """Start tracking more symbols. Returns the ones that are new."""
+        new = [s for s in symbols if s not in self._states]
+        for symbol in new:
+            self._states[symbol] = SymbolState()
+        return new
+
+    def previous_minute_volume(self, symbol: str, at: datetime) -> int | None:
+        """A liquidity estimate: shares traded in about the last minute before `at`.
+
+        The larger of the previous completed minute and the current minute so far, so a
+        quiet or unknown previous minute doesn't hide trading that is happening now.
+        """
+        candles = self._states[symbol].candles.candles
+        minute = at.replace(second=0, microsecond=0)
+        current = 0
+        for candle in reversed(candles):
+            if candle.time == minute:
+                current = candle.volume
+            elif candle.time < minute:
+                return max(candle.volume, current)
+        return current if current else None
 
     def seed_candles(self, symbol: str, candles: list[Candle]) -> None:
         """Load earlier candles (e.g. today's session so far) before live updates arrive."""
@@ -91,7 +115,7 @@ class LiveMarket:
 
         state.quote = tick.filled_from(state.quote)
         candle = state.candles.apply(tick.price, tick.time, volume)
-        return TickUpdate(tick.symbol, state.quote, candle, live)
+        return TickUpdate(tick.symbol, state.quote, candle, live, volume)
 
     @property
     def measured_delay(self) -> timedelta | None:
