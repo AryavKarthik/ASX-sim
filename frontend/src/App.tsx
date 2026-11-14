@@ -12,8 +12,8 @@ export function App() {
         <span className="brand">
           ASX<span>-sim</span>
         </span>
-        <span className="badge">Intraday replay</span>
-        <span className="muted small">Real recorded ASX data · for practice only</span>
+        <span className="badge">Past-day replay</span>
+        <span className="muted small">Live trading on the delayed market is coming next · for practice only</span>
       </nav>
       <main>
         {session ? (
