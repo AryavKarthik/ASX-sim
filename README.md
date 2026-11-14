@@ -82,6 +82,7 @@ flowchart LR
 ```
 
 Key design decisions are recorded as [Architecture Decision Records](docs/adr/).
+[ADR 0008](docs/adr/0008-execution-model.md) explains exactly how simulated orders fill.
 [ADR 0007](docs/adr/0007-live-delayed-trading-is-the-core.md) explains the focus on live
 delayed trading.
 
@@ -148,7 +149,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Day 2:** ASX market rules: tick sizes, trading calendar, trading phases and auctions
 - [x] **Day 3:** first clickable app (currently a past-day replay viewer): chart, clock, time gate, WebSocket stream
 - [x] **Live delayed market (top priority):** watchlist of up to 20 stocks streaming Yahoo's delayed prices as they update (with a polling fallback), live candles and quotes that tick with every price, measured delay, delayed-market clock and phases, and a demo mode for outside market hours. *To verify on a live trading session: real update frequency and delay.*
-- [ ] **Then: trading on the live market:** order ticket, realistic fills against the delayed feed, brokerage, cash, holdings and P&L → `v0.1`
+- [x] **Trading on the live market:** order ticket (market and limit), fills at the delayed prices shown with spread, liquidity caps, partial fills and opening/closing auctions, ASX rules ($500 first parcel, price steps, no shorting), brokerage, cash, buying power, holdings, P&L, positions/orders/fills, saved account → `v0.1`
 - [ ] **Week 2:** full order types, halts, T+2, journal, analytics, more indicators
 - [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`
 - [ ] **Secondary:** trading inside past-day replay, daily replay over longer periods
