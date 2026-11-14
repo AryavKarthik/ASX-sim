@@ -1,9 +1,10 @@
 """Record 1-minute ASX bars from Yahoo Finance into one Parquet file per trading day.
 
-Why this exists: Yahoo only serves 1-minute history for roughly the last 30 days, but
-intraday replay (the main day-trading mode) needs months of it. Running this after every
-trading day builds that history up. In production it runs on a schedule inside a *private*
-GitHub repo, so recorded data is never published (see docs/adr/0004-data-licensing.md).
+Why this exists: Yahoo only serves 1-minute history for roughly the last 30 days. Live
+trading streams delayed prices directly (ADR 0007), but its charts need earlier days'
+intraday history, and so does the secondary past-day replay feature. Running this after
+every trading day builds that history up. In production it runs on a schedule inside a
+*private* GitHub repo, so recorded data is never published (see docs/adr/0004).
 
 Layout written:  <out>/<YYYY>/<YYYY-MM-DD>.parquet   (date = Sydney trading date)
 Columns:         symbol (ASX code), ts (UTC), open, high, low, close, volume

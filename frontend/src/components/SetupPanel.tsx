@@ -51,10 +51,11 @@ export function SetupPanel({ onStart }: { onStart: (session: StartedSession) => 
 
   return (
     <form className="setup card" onSubmit={start}>
-      <h1>Intraday replay</h1>
+      <h1>Look back at a past day</h1>
       <p className="muted">
-        Pick a past trading day and a stock. The day replays minute by minute from just before
-        the open, and you only ever see what had happened up to the replay clock.
+        Review a recorded trading day minute by minute, from just before the open. You only see
+        what had happened up to the replay clock. (Live trading on today&apos;s delayed market is
+        the main mode and is being built next.)
       </p>
 
       <label>

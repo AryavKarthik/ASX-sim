@@ -1,7 +1,7 @@
 [project]
 name = "asxsim"
 version = "0.1.0"
-description = "Realistic ASX trading simulator: matching engine, replay, analytics and an AI coach."
+description = "Realistic ASX day-trading simulator on the live (20-minute delayed) market, with analytics and an AI coach."
 authors = [{ name = "Aryav Karthik" }]
 license = "MIT"
 requires-python = ">=3.12"

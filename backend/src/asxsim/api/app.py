@@ -1,4 +1,7 @@
-"""FastAPI app: lists recorded days and stocks, and streams intraday replays over WebSockets.
+"""FastAPI app: lists recorded days and stocks, and streams past-day replays over WebSockets.
+
+Past-day replay is the secondary feature; live trading on the delayed market (ADR 0007) is
+the core and is being added next.
 
 Run locally:  uv run uvicorn asxsim.api.app:app --reload   (from backend/)
 Interactive API docs are then at http://127.0.0.1:8000/docs
