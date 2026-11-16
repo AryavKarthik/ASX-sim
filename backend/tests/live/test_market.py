@@ -93,6 +93,21 @@ def test_liquidity_estimate_uses_the_busier_of_last_and_current_minute() -> None
     assert LiveMarket(["BHP"]).previous_minute_volume("BHP", TRADE) is None
 
 
+def test_open_and_day_range_come_from_todays_candles_when_missing() -> None:
+    market = LiveMarket(["BHP"])
+    minute = TRADE.replace(second=0)
+    yesterday = Candle(minute - timedelta(days=1), 70, 75, 65, 70, 1)
+    today = Candle(minute - timedelta(minutes=2), 58.0, 58.6, 57.9, 58.4, 10)
+    market.seed_candles("BHP", [yesterday, today])
+
+    update = market.on_tick(tick(57.5, TRADE), TRADE)
+
+    assert update is not None
+    assert update.quote.open_price == 58.0
+    assert update.quote.day_high == 58.6
+    assert update.quote.day_low == 57.5  # today's new low, from this trade
+
+
 def test_ignores_symbols_not_on_the_watchlist() -> None:
     market = LiveMarket(["BHP"])
     assert market.on_tick(Tick("CBA", 150.0, TRADE), TRADE) is None

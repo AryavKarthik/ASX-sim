@@ -67,6 +67,16 @@ def parse_yahoo_message(
     millis = _int(message, "time")
     if code is None or price is None or millis is None:
         return None
+    previous_close = _float(message, "previous_close")
+    if previous_close is None:
+        # Yahoo's ASX stream omits the previous close but sends `change` (price minus the
+        # previous close), so we can recover it. `change` may be negative or zero.
+        change = message.get("change")
+        try:
+            if change not in (None, ""):
+                previous_close = round(price - float(change), 4) or None
+        except (TypeError, ValueError):
+            previous_close = None
     return Tick(
         symbol=code,
         price=price,
@@ -76,7 +86,7 @@ def parse_yahoo_message(
         day_high=_float(message, "day_high"),
         day_low=_float(message, "day_low"),
         open_price=_float(message, "open_price"),
-        previous_close=_float(message, "previous_close"),
+        previous_close=previous_close,
         bid=_float(message, "bid"),
         ask=_float(message, "ask"),
     )

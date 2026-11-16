@@ -146,7 +146,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
                 className={up ? "up" : "down"}
                 title={quote ? `Change since ${quote.change_basis}` : "Change since the session's open"}
               >
-                {quote?.change != null ? `${up ? "+" : "−"}${Math.abs(quote.change).toFixed(3)} ` : ""}(
+                {quote?.change != null ? `${up ? "+" : "−"}${Math.abs(quote.change).toFixed(quote.price < 2 ? 3 : 2)} ` : ""}(
                 {up ? "+" : "−"}
                 {Math.abs(shown.pct).toFixed(2)}%)
               </span>

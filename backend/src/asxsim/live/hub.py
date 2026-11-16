@@ -41,19 +41,24 @@ FeedFactory = Callable[[LiveMarket], PriceFeed]
 HistoryLoader = Callable[[list[str]], tuple[pd.DataFrame, str | None]]
 
 
+def _round(value: float | None) -> float | None:
+    # Yahoo sends float32 values (58.45 arrives as 58.4500007629); 4 decimals removes the noise.
+    return None if value is None else round(value, 4)
+
+
 def quote_json(tick: Tick) -> dict[str, Any]:
     reference = tick.previous_close or tick.open_price
     change = tick.price - reference if reference else None
     return {
         "price": round(tick.price, 4),
         "time": sydney_epoch(tick.time),
-        "previous_close": tick.previous_close,
-        "open": tick.open_price,
-        "day_high": tick.day_high,
-        "day_low": tick.day_low,
+        "previous_close": _round(tick.previous_close),
+        "open": _round(tick.open_price),
+        "day_high": _round(tick.day_high),
+        "day_low": _round(tick.day_low),
         "day_volume": tick.day_volume,
-        "bid": tick.bid,
-        "ask": tick.ask,
+        "bid": _round(tick.bid),
+        "ask": _round(tick.ask),
         "change": None if change is None else round(change, 4),
         "change_pct": None
         if change is None or not reference

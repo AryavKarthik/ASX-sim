@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import statistics
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta
 
 from asxsim.live.candles import Candle, CandleSeries
@@ -115,7 +115,28 @@ class LiveMarket:
 
         state.quote = tick.filled_from(state.quote)
         candle = state.candles.apply(tick.price, tick.time, volume)
+        state.quote = self._with_session_stats(tick, state.quote, state.candles.candles)
         return TickUpdate(tick.symbol, state.quote, candle, live, volume)
+
+    @staticmethod
+    def _with_session_stats(tick: Tick, quote: Tick, candles: list[Candle]) -> Tick:
+        """Fill the open and day high/low from today's candles when the feed didn't send them.
+
+        Yahoo's ASX stream omits these fields; a value carried over from an earlier quote
+        could belong to a previous day, so today's candles are the reliable source.
+        """
+        if tick.open_price is not None and tick.day_high is not None and tick.day_low is not None:
+            return quote
+        day = tick.time.astimezone(SYDNEY).date()
+        session = [c for c in candles if c.time.astimezone(SYDNEY).date() == day]
+        if not session:
+            return quote
+        return replace(
+            quote,
+            open_price=tick.open_price or session[0].open,
+            day_high=tick.day_high or max(c.high for c in session),
+            day_low=tick.day_low or min(c.low for c in session),
+        )
 
     @property
     def measured_delay(self) -> timedelta | None:
