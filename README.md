@@ -54,7 +54,12 @@ running 20 minutes behind.**
   P&L, configurable brokerage, dividends and splits.
 - **Charts:** candlesticks from 1-minute to monthly, volume, SMA/EMA, VWAP, RSI, MACD,
   Bollinger Bands.
-- **Trade journal:** setup, thesis, planned stop and target, emotions, and a post-trade review.
+- **Trade journal:**
+  - fills are grouped into round-trip trades automatically,
+  - write your plan (setup, reason, stop, target) on the order ticket and see the risk/reward
+    before you buy,
+  - review each trade (followed the plan?, what went well, what to improve, emotions, rating),
+  - each trade's **R-multiple** (P&L in units of the risk you planned) is worked out for you.
 - **Analytics:**
   - equity curve vs the ASX 200,
   - win rate, profit factor, expectancy, max drawdown, Sharpe,
@@ -151,7 +156,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Live delayed market (top priority):** watchlist of up to 20 stocks streaming Yahoo's delayed prices as they update (with a polling fallback), live candles and quotes that tick with every price, measured delay, delayed-market clock and phases, and a demo mode for outside market hours. *Verified live on 16 Nov 2026: updates about every second for busy stocks, a 20.0-minute delay, real bid/ask included (see ADR 0007).*
 - [x] **Trading on the live market:** order ticket (market and limit), fills at the delayed prices shown with spread, liquidity caps, partial fills and opening/closing auctions, ASX rules ($500 first parcel, price steps, no shorting), brokerage, cash, buying power, holdings, P&L, positions/orders/fills, saved account → `v0.1`
 - [x] **Week 2, part 1:** stop, stop-limit and trailing-stop orders (broker-side conditional orders), good-till-cancelled orders, T+2 settlement
-- [ ] **Week 2, next:** trade journal, performance analytics, chart indicators and timeframes, trading halts
+- [x] **Week 2, part 2:** trade journal (round-trip trades, plan on the ticket, review, R-multiple) and a price refresh setting (Live / 5s / 30s)
+- [ ] **Week 2, next:** performance analytics, chart indicators and timeframes, trading halts
 - [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`
 - [ ] **Secondary:** trading inside past-day replay, daily replay over longer periods
 - [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options

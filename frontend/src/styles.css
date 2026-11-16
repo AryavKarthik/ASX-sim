@@ -765,3 +765,118 @@ tr.clickable:hover {
   flex: none;
   width: 84px;
 }
+
+/* ---------- journal ---------- */
+
+.refresh {
+  align-items: center;
+}
+
+.plan-box {
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.plan-toggle {
+  border: none;
+  padding: 4px 0;
+  font-size: 13px;
+  color: #9cc2ff;
+}
+
+.plan-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px 0 8px;
+}
+
+textarea {
+  font: inherit;
+  font-size: 14px;
+  color: var(--text);
+  background: #0e141c;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.journal-editor {
+  margin-top: 12px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.journal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.journal-grid section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.journal-grid h4 {
+  margin: 0;
+}
+
+.journal-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.stars button {
+  border: none;
+  background: transparent;
+  padding: 0 2px;
+  font-size: 20px;
+  color: #3a4554;
+}
+
+.stars button.on {
+  color: var(--warn);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.chip.on {
+  background: #1d2a3d;
+  border-color: var(--accent);
+  color: #9cc2ff;
+}
+
+tr.selected-row {
+  background: #1a2533;
+}
+
+@media (max-width: 900px) {
+  .journal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.input-row label {
+  flex: 1;
+  min-width: 0;
+}
+
+.input-row label input {
+  width: 100%;
+}

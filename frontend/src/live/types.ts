@@ -94,6 +94,52 @@ export type AccountView = {
   orders: OrderView[];
   fills: FillView[];
   brokerage: { flat: string; percent: string; minimum: string };
+  trades: TradeView[];
+};
+
+export type JournalEntry = {
+  setup: string | null;
+  thesis: string;
+  planned_stop: string | null;
+  planned_target: string | null;
+  confidence: number | null;
+  emotions: string[];
+  followed_plan: boolean | null;
+  went_well: string;
+  to_improve: string;
+  rating: number | null;
+  updated_at: string | null;
+};
+
+export type TradeView = {
+  id: string;
+  symbol: string;
+  status: "open" | "closed";
+  opened_at: string;
+  closed_at: string | null;
+  holding_minutes: number;
+  entry_quantity: number;
+  exit_quantity: number;
+  open_quantity: number;
+  average_entry: string;
+  average_exit: string | null;
+  gross_pnl: string;
+  fees: string;
+  net_pnl: string;
+  unrealised: string | null;
+  r_multiple: number | null;
+  journal: JournalEntry;
+};
+
+export type JournalOptions = { setups: string[]; emotions: string[] };
+
+/** What the order ticket can send as the trade's plan. */
+export type TradePlan = {
+  setup?: string;
+  thesis?: string;
+  planned_stop?: string;
+  planned_target?: string;
+  confidence?: number;
 };
 
 export type CommandResult =
@@ -110,6 +156,7 @@ export type OrderCommand = {
   trail_amount?: string;
   trail_percent?: string;
   time_in_force?: "day" | "gtc";
+  plan?: TradePlan;
 };
 
 export type LiveMessage =
@@ -129,6 +176,7 @@ export type Defaults = {
   watchlist: string[];
   max_symbols: number;
   universe: { code: string; name: string }[];
+  journal: JournalOptions;
 };
 
 export type FeedSource =
