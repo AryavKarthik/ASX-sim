@@ -29,6 +29,21 @@ def test_parses_a_yahoo_stream_message() -> None:
     assert tick.bid is None
 
 
+def test_previous_close_is_recovered_from_change_when_yahoo_omits_it() -> None:
+    # The real shape of an ASX message from Yahoo's stream (16 Nov 2026): no previous_close.
+    message = {
+        "id": "BHP.AX",
+        "price": 57.58,
+        "time": str(int(T0.timestamp() * 1000)),
+        "change": -0.42,
+    }
+
+    tick = parse_yahoo_message(message, Y2C)
+
+    assert tick is not None
+    assert tick.previous_close == 58.0
+
+
 def test_ignores_unusable_messages() -> None:
     assert parse_yahoo_message({"id": "ZZZ.AX", "price": 1, "time": "1"}, Y2C) is None
     assert parse_yahoo_message({"id": "BHP.AX", "time": "1"}, Y2C) is None  # no price
