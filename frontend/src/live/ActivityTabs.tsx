@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { AccountView, CommandResult, OrderCommand } from "./types";
+import type { AccountView, CommandResult, OrderCommand, OrderView } from "./types";
 
 type Tab = "positions" | "orders" | "fills";
 
@@ -20,7 +20,36 @@ function tone(value: string | null): string {
   return n > 0 ? "up" : n < 0 ? "down" : "";
 }
 
+function describeType(o: OrderView): string {
+  switch (o.display_type) {
+    case "market":
+      return "Market";
+    case "limit":
+      return `Limit $${o.limit_price}`;
+    case "stop":
+      return `Stop $${o.trigger_price}`;
+    case "stop_limit":
+      return `Stop $${o.trigger_price} → limit $${o.limit_price}`;
+    case "trailing_stop": {
+      const trail = o.trail_amount ? `$${o.trail_amount}` : `${o.trail_percent}%`;
+      return o.status === "pending" ? `Trailing ${trail} (now $${o.trigger_price})` : `Trailing ${trail}`;
+    }
+  }
+}
+
+function settleDay(iso: string | null): string {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-AU", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
 const STATUS_LABEL: Record<string, string> = {
+  pending: "Waiting for trigger",
   queued: "Waiting for auction",
   working: "Working",
   filled: "Filled",
@@ -43,7 +72,7 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder }: Props) {
   const positions = account?.positions ?? [];
   const orders = account?.orders ?? [];
   const fills = account?.fills ?? [];
-  const openCount = orders.filter((o) => o.status === "working" || o.status === "queued").length;
+  const openCount = orders.filter((o) => ["pending", "queued", "working"].includes(o.status)).length;
 
   async function run(action: Promise<CommandResult>) {
     const reply = await action;
@@ -130,7 +159,7 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder }: Props) {
               </thead>
               <tbody>
                 {orders.map((o) => {
-                  const open = o.status === "working" || o.status === "queued";
+                  const open = ["pending", "queued", "working"].includes(o.status);
                   return (
                     <tr key={o.id} title={o.message ?? undefined}>
                       <td>{marketTime(o.created_at)}</td>
@@ -138,7 +167,10 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder }: Props) {
                         {o.symbol}
                       </td>
                       <td className={o.side === "buy" ? "up" : "down"}>{o.side.toUpperCase()}</td>
-                      <td>{o.type === "limit" ? `Limit $${o.limit_price}` : "Market"}</td>
+                      <td>
+                        {describeType(o)}
+                        {o.time_in_force === "gtc" && <span className="tag">GTC</span>}
+                      </td>
                       <td>
                         {o.filled.toLocaleString("en-AU")} / {o.quantity.toLocaleString("en-AU")}
                       </td>
@@ -176,6 +208,7 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder }: Props) {
                   <th>Value</th>
                   <th>Fee</th>
                   <th>How</th>
+                  <th>Settles</th>
                 </tr>
               </thead>
               <tbody>
@@ -189,6 +222,7 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder }: Props) {
                     <td>{money(f.value)}</td>
                     <td>{money(f.fee)}</td>
                     <td className="muted">{f.liquidity}</td>
+                    <td className="muted">{settleDay(f.settles_on)}</td>
                   </tr>
                 ))}
               </tbody>
