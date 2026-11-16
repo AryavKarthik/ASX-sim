@@ -1,8 +1,9 @@
 import { useState } from "react";
 
-import type { AccountView, CommandResult, OrderCommand, OrderView } from "./types";
+import { JournalPanel } from "./JournalPanel";
+import type { AccountView, CommandResult, JournalEntry, JournalOptions, OrderCommand, OrderView } from "./types";
 
-type Tab = "positions" | "orders" | "fills";
+type Tab = "positions" | "orders" | "fills" | "journal";
 
 function marketTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-AU", { timeZone: "Australia/Sydney", hour12: false });
@@ -63,10 +64,12 @@ type Props = {
   onSelect: (symbol: string) => void;
   onCancel: (orderId: string) => Promise<CommandResult>;
   onOrder: (order: OrderCommand) => Promise<CommandResult>;
+  journalOptions: JournalOptions;
+  onJournalSave: (tradeId: string, fields: Partial<JournalEntry>) => Promise<CommandResult>;
 };
 
-/** Positions, orders and fills, below the chart. */
-export function ActivityTabs({ account, onSelect, onCancel, onOrder }: Props) {
+/** Positions, orders, fills and the trade journal, below the chart. */
+export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOptions, onJournalSave }: Props) {
   const [tab, setTab] = useState<Tab>("positions");
   const [error, setError] = useState<string | null>(null);
   const positions = account?.positions ?? [];
@@ -91,10 +94,21 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder }: Props) {
         <button className={tab === "fills" ? "active" : ""} onClick={() => setTab("fills")}>
           Fills ({fills.length})
         </button>
+        <button className={tab === "journal" ? "active" : ""} onClick={() => setTab("journal")}>
+          Journal ({account?.trades.length ?? 0})
+        </button>
       </div>
       {error && <p className="error small-text">{error}</p>}
 
       <div className="table-wrap">
+        {tab === "journal" && (
+          <JournalPanel
+            trades={account?.trades ?? []}
+            options={journalOptions}
+            onSave={onJournalSave}
+            onSelectSymbol={onSelect}
+          />
+        )}
         {tab === "positions" &&
           (positions.length === 0 ? (
             <p className="muted empty">No holdings yet. Buy something from the ticket on the right.</p>

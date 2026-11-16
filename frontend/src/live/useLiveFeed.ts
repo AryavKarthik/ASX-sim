@@ -38,6 +38,7 @@ export function useLiveFeed(
   source: FeedSource,
   onCandle: (symbol: string, candle: Bar) => void,
   onSnapshot: () => void,
+  refreshMs = 0, // how often to redraw prices: 0 = every update
 ): LiveFeed {
   const [connected, setConnected] = useState(false);
   const [sessionDay, setSessionDay] = useState<string | null>(null);
@@ -52,10 +53,49 @@ export function useLiveFeed(
   const nextId = useRef(1);
   const callbacks = useRef({ onCandle, onSnapshot });
   const symbolsRef = useRef(symbols);
+  const refreshRef = useRef(refreshMs);
+  const buffered = useRef({ quotes: new Map<string, Quote>(), candles: new Map<string, Map<number, Bar>>() });
+  const shown = useRef(new Set<string>()); // symbols whose first price has been drawn
 
   useEffect(() => {
     callbacks.current = { onCandle, onSnapshot };
   }, [onCandle, onSnapshot]);
+
+  /** Draw everything that arrived since the last refresh. */
+  const flush = useCallback(() => {
+    const { quotes: q, candles: c } = buffered.current;
+    if (q.size === 0 && c.size === 0) return;
+    const newQuotes = Object.fromEntries(q);
+    const updated = [...q.keys()];
+    for (const symbol of updated) shown.current.add(symbol);
+    q.clear();
+    setQuotes((prev) => ({ ...prev, ...newQuotes }));
+    setTicks((prev) => {
+      const next = { ...prev };
+      for (const symbol of updated) next[symbol] = (next[symbol] ?? 0) + 1;
+      return next;
+    });
+    for (const [symbol, perMinute] of c) {
+      const list = candles.current.get(symbol) ?? [];
+      for (const candle of [...perMinute.values()].sort((a, b) => a.time - b.time)) {
+        const last = list[list.length - 1];
+        if (last && last.time === candle.time) list[list.length - 1] = candle;
+        else if (!last || candle.time > last.time) list.push(candle);
+        callbacks.current.onCandle(symbol, candle);
+      }
+      candles.current.set(symbol, list);
+    }
+    c.clear();
+  }, []);
+
+  // Redraw on the chosen interval (or on every price when it's 0, "Live").
+  useEffect(() => {
+    refreshRef.current = refreshMs;
+    flush();
+    if (refreshMs === 0) return;
+    const timer = window.setInterval(flush, refreshMs);
+    return () => window.clearInterval(timer);
+  }, [refreshMs, flush]);
 
   const sourceKey = JSON.stringify(source);
 
@@ -64,6 +104,8 @@ export function useLiveFeed(
     const ws = new WebSocket(liveSocketUrl(symbolsRef.current, source));
     socket.current = ws;
     candles.current = new Map();
+    buffered.current = { quotes: new Map(), candles: new Map() };
+    shown.current = new Set();
     setQuotes({});
     setTicks({});
     setStatus(null);
@@ -93,16 +135,17 @@ export function useLiveFeed(
           callbacks.current.onSnapshot();
           break;
         case "tick": {
-          setQuotes((q) => ({ ...q, [message.symbol]: message.quote }));
-          setTicks((t) => ({ ...t, [message.symbol]: (t[message.symbol] ?? 0) + 1 }));
+          // Hold the update; it's drawn on the next refresh (immediately in "Live" mode).
+          const buffer = buffered.current;
+          buffer.quotes.set(message.symbol, message.quote);
           if (message.candle) {
-            const list = candles.current.get(message.symbol) ?? [];
-            const last = list[list.length - 1];
-            if (last && last.time === message.candle.time) list[list.length - 1] = message.candle;
-            else list.push(message.candle);
-            candles.current.set(message.symbol, list);
-            callbacks.current.onCandle(message.symbol, message.candle);
+            const perSymbol = buffer.candles.get(message.symbol) ?? new Map<number, Bar>();
+            perSymbol.set(message.candle.time, message.candle); // latest version of each minute
+            buffer.candles.set(message.symbol, perSymbol);
           }
+          // Live mode draws everything at once; otherwise a stock's first price is still shown
+          // straight away, so the screen isn't blank until the first refresh.
+          if (refreshRef.current === 0 || !shown.current.has(message.symbol)) flush();
           break;
         }
         case "account":
@@ -125,7 +168,7 @@ export function useLiveFeed(
     return () => ws.close();
     // `sourceKey` captures the source; reconnect only when it changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourceKey]);
+  }, [sourceKey, flush]);
 
   // Watchlist changes are sent over the open connection.
   const symbolsKey = symbols.join(",");

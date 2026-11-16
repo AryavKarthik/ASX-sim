@@ -6,12 +6,31 @@ import { PHASE_HELP, PHASE_LABELS, clockTime, formatDay, formatPrice } from "../
 import { AccountPanel } from "./AccountPanel";
 import { ActivityTabs } from "./ActivityTabs";
 import { OrderTicket } from "./OrderTicket";
-import type { Defaults, FeedSource, LiveStatus, OrderCommand } from "./types";
+import type { Defaults, FeedSource, JournalEntry, LiveStatus, OrderCommand } from "./types";
 import { useLiveFeed } from "./useLiveFeed";
 import { Watchlist, displayQuote } from "./Watchlist";
 
 const STORAGE_KEY = "asxsim.watchlist";
+const REFRESH_KEY = "asxsim.refresh";
 const DEMO_SPEEDS = [1, 5, 20];
+// How often prices are redrawn. The trading engine still sees every price either way.
+const REFRESH_OPTIONS = [
+  { ms: 0, label: "Live" },
+  { ms: 5_000, label: "5s" },
+  { ms: 30_000, label: "30s" },
+];
+const DEFAULT_REFRESH = 30_000;
+
+function loadRefresh(): number {
+  try {
+    const saved = Number(window.localStorage.getItem(REFRESH_KEY));
+    return REFRESH_OPTIONS.some((o) => o.ms === saved) && window.localStorage.getItem(REFRESH_KEY) !== null
+      ? saved
+      : DEFAULT_REFRESH;
+  } catch {
+    return DEFAULT_REFRESH;
+  }
+}
 
 function loadWatchlist(): string[] | null {
   try {
@@ -71,6 +90,16 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
   });
   const [selected, setSelected] = useState(symbols[0]);
   const [source, setSource] = useState<FeedSource>({ kind: "live" });
+  const [refreshMs, setRefreshMs] = useState<number>(loadRefresh);
+
+  function chooseRefresh(ms: number) {
+    setRefreshMs(ms);
+    try {
+      window.localStorage.setItem(REFRESH_KEY, String(ms));
+    } catch {
+      // Storage blocked: the choice just won't be remembered.
+    }
+  }
   const [demoDays, setDemoDays] = useState<string[]>([]);
   const chart = useRef<PriceChartHandle>(null);
   const selectedRef = useRef(selected);
@@ -92,9 +121,15 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
   const onCandle = useCallback((symbol: string, candle: Bar) => {
     if (symbol === selectedRef.current) chart.current?.append([candle]);
   }, []);
-  const feed = useLiveFeed(symbols, source, onCandle, () => {
-    chart.current?.reset(feed.candlesFor(selectedRef.current));
-  });
+  const feed = useLiveFeed(
+    symbols,
+    source,
+    onCandle,
+    () => {
+      chart.current?.reset(feed.candlesFor(selectedRef.current));
+    },
+    refreshMs,
+  );
 
   useEffect(() => {
     selectedRef.current = selected;
@@ -106,6 +141,10 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
   const { status, quotes, connected, sessionDay, account, command } = feed;
   const placeOrder = useCallback((order: OrderCommand) => command("order", order), [command]);
   const cancelOrder = useCallback((orderId: string) => command("cancel", { order_id: orderId }), [command]);
+  const saveJournal = useCallback(
+    (tradeId: string, fields: Partial<JournalEntry>) => command("journal", { trade_id: tradeId, fields }),
+    [command],
+  );
   const resetAccount = useCallback(
     (startingCash: string) => command("reset_account", { starting_cash: startingCash }),
     [command],
@@ -190,6 +229,19 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
           <span className={`feed-dot ${line.tone}`} aria-hidden />
           <span className="feed-text">{line.text}</span>
           {feed.closedReason && <span className="error">{feed.closedReason}</span>}
+          <div className="speeds refresh" role="group" aria-label="How often prices refresh">
+            <span className="muted small-inline">Refresh</span>
+            {REFRESH_OPTIONS.map((o) => (
+              <button
+                key={o.ms}
+                className={refreshMs === o.ms ? "active" : ""}
+                onClick={() => chooseRefresh(o.ms)}
+                title={o.ms === 0 ? "Redraw on every price update" : `Redraw prices every ${o.label}`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
 
           <div className="spacer" />
           {source.kind === "live" ? (
@@ -223,7 +275,14 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
           )}
         </footer>
 
-        <ActivityTabs account={account} onSelect={setSelected} onCancel={cancelOrder} onOrder={placeOrder} />
+        <ActivityTabs
+          account={account}
+          onSelect={setSelected}
+          onCancel={cancelOrder}
+          onOrder={placeOrder}
+          journalOptions={defaults.journal}
+          onJournalSave={saveJournal}
+        />
       </section>
 
       <aside className="trade-column">
@@ -234,6 +293,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
           lastPrice={shown.price}
           account={account}
           phase={phase}
+          journalOptions={defaults.journal}
           onSubmit={placeOrder}
         />
         <AccountPanel account={account} source={source.kind} onReset={resetAccount} />

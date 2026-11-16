@@ -3,7 +3,7 @@ import { type FormEvent, useEffect, useState } from "react";
 import type { Phase } from "../api";
 import { formatPrice } from "../format";
 import { estimatedTouch, isValidPrice, nearestValid, priceDecimals, tickSize } from "./ticks";
-import type { AccountView, CommandResult, OrderCommand, OrderKind, Quote } from "./types";
+import type { AccountView, CommandResult, JournalOptions, OrderCommand, OrderKind, Quote, TradePlan } from "./types";
 
 const MIN_FIRST_PURCHASE = 500;
 const ORDER_PHASES: Phase[] = ["pre_open", "open", "pre_cspa", "adjust_on"];
@@ -24,6 +24,7 @@ type Props = {
   lastPrice: number | null;
   account: AccountView | null;
   phase: Phase;
+  journalOptions: JournalOptions;
   onSubmit: (order: OrderCommand) => Promise<CommandResult>;
 };
 
@@ -65,7 +66,9 @@ function num(text: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, onSubmit }: Props) {
+export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, journalOptions, onSubmit }: Props) {
+  const [planOpen, setPlanOpen] = useState(false);
+  const [plan, setPlan] = useState<TradePlan>({});
   const [side, setSide] = useState<"buy" | "sell">("buy");
   const [kind, setKind] = useState<OrderKind>("market");
   const [quantity, setQuantity] = useState("");
@@ -82,8 +85,11 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, on
     setQuantity("");
     setLimit("");
     setTrigger("");
+    setPlan({});
     setResult(null);
   }, [symbol]);
+
+  const planFilled = Object.values(plan).some((v) => v !== undefined && v !== "");
 
   const needsLimit = kind === "limit" || kind === "stop_limit";
   const needsTrigger = kind === "stop" || kind === "stop_limit";
@@ -217,6 +223,7 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, on
       ...(needsLimit ? { limit_price: limit } : {}),
       ...(needsTrigger ? { trigger_price: trigger } : {}),
       ...(isTrailing ? (trailUnit === "$" ? { trail_amount: trail } : { trail_percent: trail }) : {}),
+      ...(side === "buy" && planFilled ? { plan } : {}),
     });
     setBusy(false);
     if (!reply.ok) {
@@ -237,6 +244,8 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, on
       setResult({ ok: true, text: "Order placed: working in the market." });
     }
     setQuantity("");
+    setPlan({});
+    setPlanOpen(false);
   }
 
   const note = phaseNote(phase, conditional);
@@ -351,6 +360,72 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, on
       )}
 
       {explanation && <p className="small-text muted">{explanation}</p>}
+
+      {side === "buy" && (
+        <div className="plan-box">
+          <button type="button" className="ghost plan-toggle" onClick={() => setPlanOpen((o) => !o)}>
+            {planOpen ? "▾" : "▸"} Trade plan {planFilled ? "✓" : "(recommended)"}
+          </button>
+          {planOpen && (
+            <div className="plan-fields">
+              <label>
+                Setup
+                <select
+                  value={plan.setup ?? ""}
+                  onChange={(e) => setPlan((p) => ({ ...p, setup: e.target.value || undefined }))}
+                >
+                  <option value="">Choose…</option>
+                  {journalOptions.setups.map((s) => (
+                    <option key={s} value={s}>
+                      {s}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Why this trade?
+                <textarea
+                  rows={2}
+                  value={plan.thesis ?? ""}
+                  onChange={(e) => setPlan((p) => ({ ...p, thesis: e.target.value }))}
+                  placeholder="What do you see, and what would prove you wrong?"
+                />
+              </label>
+              <div className="input-row">
+                <label>
+                  Stop
+                  <input
+                    inputMode="decimal"
+                    value={plan.planned_stop ?? ""}
+                    onChange={(e) => setPlan((p) => ({ ...p, planned_stop: e.target.value.replace(/[^\d.]/g, "") || undefined }))}
+                    placeholder="exit if wrong"
+                  />
+                </label>
+                <label>
+                  Target
+                  <input
+                    inputMode="decimal"
+                    value={plan.planned_target ?? ""}
+                    onChange={(e) => setPlan((p) => ({ ...p, planned_target: e.target.value.replace(/[^\d.]/g, "") || undefined }))}
+                    placeholder="take profit"
+                  />
+                </label>
+              </div>
+              {plan.planned_stop && price != null && Number(plan.planned_stop) < price && qtyValid && (
+                <p className="small-text muted">
+                  Risk: {money((price - Number(plan.planned_stop)) * qty)}
+                  {plan.planned_target && Number(plan.planned_target) > price
+                    ? ` · reward ${money((Number(plan.planned_target) - price) * qty)} · ${(
+                        (Number(plan.planned_target) - price) /
+                        (price - Number(plan.planned_stop))
+                      ).toFixed(1)}:1`
+                    : ""}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <dl className="estimate">
         <dt>{priceLabel}</dt>
