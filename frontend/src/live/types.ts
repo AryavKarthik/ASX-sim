@@ -29,16 +29,24 @@ export type LiveStatus = {
   error: string | null;
 };
 
+export type OrderKind = "market" | "limit" | "stop" | "stop_limit" | "trailing_stop";
+
 export type OrderView = {
   id: string;
   symbol: string;
   side: "buy" | "sell";
-  type: "market" | "limit";
+  type: OrderKind;
+  display_type: OrderKind;
   quantity: number;
   limit_price: string | null;
+  trigger_price: string | null;
+  trail_amount: string | null;
+  trail_percent: string | null;
+  time_in_force: "day" | "gtc";
+  expires_on: string | null;
   created_at: string;
   session: string;
-  status: "queued" | "working" | "filled" | "cancelled" | "expired" | "rejected";
+  status: "pending" | "queued" | "working" | "filled" | "cancelled" | "expired" | "rejected";
   auction: "open" | "close" | null;
   filled: number;
   average_price: string | null;
@@ -56,6 +64,7 @@ export type FillView = {
   value: string;
   time: string;
   liquidity: string;
+  settles_on: string | null;
 };
 
 export type PositionView = {
@@ -72,6 +81,8 @@ export type PositionView = {
 export type AccountView = {
   starting_cash: string;
   cash: string;
+  settled_cash: string;
+  pending_settlement: { date: string; amount: string }[];
   buying_power: string;
   market_value: string;
   equity: string;
@@ -92,9 +103,13 @@ export type CommandResult =
 export type OrderCommand = {
   symbol: string;
   side: "buy" | "sell";
-  type: "market" | "limit";
+  type: OrderKind;
   quantity: number;
   limit_price?: string;
+  trigger_price?: string;
+  trail_amount?: string;
+  trail_percent?: string;
+  time_in_force?: "day" | "gtc";
 };
 
 export type LiveMessage =

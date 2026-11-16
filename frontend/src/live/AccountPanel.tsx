@@ -15,6 +15,24 @@ function tone(value: string | number): string {
   return n > 0 ? "up" : n < 0 ? "down" : "";
 }
 
+function SettlementRow({ date, amount }: { date: string; amount: string }) {
+  const [y, m, d] = date.split("-").map(Number);
+  const day = new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("en-AU", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+  return (
+    <>
+      <dt className="indent" title="T+2: trades settle two trading days after they happen">
+        Settles {day}
+      </dt>
+      <dd className={tone(amount)}>{money(amount, true)}</dd>
+    </>
+  );
+}
+
 type Props = {
   account: AccountView | null;
   source: "live" | "demo";
@@ -54,6 +72,11 @@ export function AccountPanel({ account, source, onReset }: Props) {
         <dd className={tone(account.net_pnl)}>{money(account.net_pnl, true)}</dd>
         <dt>Cash</dt>
         <dd>{money(account.cash)}</dd>
+        <dt title="Cash from trades that have completed T+2 settlement">Settled cash</dt>
+        <dd>{money(account.settled_cash)}</dd>
+        {account.pending_settlement.map((p) => (
+          <SettlementRow key={p.date} date={p.date} amount={p.amount} />
+        ))}
         <dt>Buying power</dt>
         <dd>{money(account.buying_power)}</dd>
         <dt>Holdings value</dt>
