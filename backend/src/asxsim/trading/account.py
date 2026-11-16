@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from datetime import date
 from decimal import Decimal
 from typing import Any
 
@@ -81,6 +82,18 @@ class Account:
     @property
     def realised(self) -> Decimal:
         return sum((p.realised for p in self.positions.values()), ZERO)
+
+    def pending_settlement(self, today: date) -> list[tuple[date, Decimal]]:
+        """Net cash still to settle (T+2), by settlement date. Sales are +, purchases -."""
+        amounts: dict[date, Decimal] = {}
+        for fill in self.fills:
+            if fill.settles_on is not None and fill.settles_on > today:
+                amounts[fill.settles_on] = amounts.get(fill.settles_on, ZERO) + fill.cash_effect
+        return sorted(amounts.items())
+
+    def settled_cash(self, today: date) -> Decimal:
+        """Cash that has actually settled (excludes trades still inside T+2)."""
+        return self.cash - sum((amount for _, amount in self.pending_settlement(today)), ZERO)
 
     def equity(self, prices: Mapping[str, Decimal]) -> Decimal:
         return self.cash + self.market_value(prices)
