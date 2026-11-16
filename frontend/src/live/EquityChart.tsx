@@ -1,0 +1,84 @@
+import { type IChartApi, type ISeriesApi, LineSeries, type UTCTimestamp, createChart } from "lightweight-charts";
+import { useEffect, useRef } from "react";
+
+// Categorical slots 1 and 2 of the reference palette, dark steps; validated against the
+// panel surface #121923 (CVD ΔE 26.8, contrast >= 3:1).
+const ACCOUNT = "#3987e5";
+const BENCHMARK = "#d95926";
+
+type Point = { time: number; equity: number };
+
+/** Strictly increasing times, as the chart requires (two closes in one second keep the last). */
+function prepare(points: Point[]) {
+  const byTime = new Map<number, number>();
+  for (const p of points) byTime.set(Math.floor(p.time), p.equity);
+  return [...byTime.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([time, value]) => ({ time: time as UTCTimestamp, value }));
+}
+
+/** Your equity over time, against the ASX 200 rescaled to the same starting cash (one $ axis). */
+export function EquityChart({ curve, benchmark }: { curve: Point[]; benchmark: Point[] }) {
+  const container = useRef<HTMLDivElement>(null);
+  const series = useRef<{ chart: IChartApi; account: ISeriesApi<"Line">; index: ISeriesApi<"Line"> } | null>(null);
+
+  useEffect(() => {
+    const chart = createChart(container.current!, {
+      autoSize: true,
+      layout: {
+        background: { color: "transparent" },
+        textColor: "#8b96a5",
+        fontFamily: "Inter, system-ui, sans-serif",
+        attributionLogo: true,
+      },
+      grid: { vertLines: { visible: false }, horzLines: { color: "#1c2430" } },
+      rightPriceScale: { borderColor: "#2a3441" },
+      timeScale: { borderColor: "#2a3441", timeVisible: true, secondsVisible: false },
+      localization: {
+        priceFormatter: (p: number) => p.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }),
+      },
+    });
+    const index = chart.addSeries(LineSeries, {
+      color: BENCHMARK,
+      lineWidth: 2,
+      title: "ASX 200",
+      priceLineVisible: false,
+    });
+    const account = chart.addSeries(LineSeries, {
+      color: ACCOUNT,
+      lineWidth: 2,
+      title: "You",
+      priceLineVisible: false,
+      lineType: 1, // steps: equity changes when trades close
+    });
+    series.current = { chart, account, index };
+    return () => {
+      chart.remove();
+      series.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const s = series.current;
+    if (!s) return;
+    s.account.setData(prepare(curve));
+    s.index.setData(prepare(benchmark));
+    s.chart.timeScale().fitContent();
+  }, [curve, benchmark]);
+
+  return (
+    <div className="equity">
+      <div className="legend" aria-label="Legend">
+        <span>
+          <i style={{ background: ACCOUNT }} /> Your account
+        </span>
+        {benchmark.length > 0 && (
+          <span>
+            <i style={{ background: BENCHMARK }} /> ASX 200, if you'd invested the same starting cash
+          </span>
+        )}
+      </div>
+      <div className="equity-chart" ref={container} />
+    </div>
+  );
+}

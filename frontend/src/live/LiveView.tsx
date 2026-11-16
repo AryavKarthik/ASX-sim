@@ -5,6 +5,7 @@ import { PriceChart, type PriceChartHandle } from "../components/PriceChart";
 import { PHASE_HELP, PHASE_LABELS, clockTime, formatDay, formatPrice } from "../format";
 import { AccountPanel } from "./AccountPanel";
 import { ActivityTabs } from "./ActivityTabs";
+import { PerformancePanel } from "./PerformancePanel";
 import { OrderTicket } from "./OrderTicket";
 import type { Defaults, FeedSource, JournalEntry, LiveStatus, OrderCommand } from "./types";
 import { useLiveFeed } from "./useLiveFeed";
@@ -91,6 +92,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
   const [selected, setSelected] = useState(symbols[0]);
   const [source, setSource] = useState<FeedSource>({ kind: "live" });
   const [refreshMs, setRefreshMs] = useState<number>(loadRefresh);
+  const [view, setView] = useState<"chart" | "performance">("chart");
 
   function chooseRefresh(ms: number) {
     setRefreshMs(ms);
@@ -141,6 +143,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
   const { status, quotes, connected, sessionDay, account, command } = feed;
   const placeOrder = useCallback((order: OrderCommand) => command("order", order), [command]);
   const cancelOrder = useCallback((orderId: string) => command("cancel", { order_id: orderId }), [command]);
+  const requestAnalytics = useCallback(() => command("analytics", {}), [command]);
   const saveJournal = useCallback(
     (tradeId: string, fields: Partial<JournalEntry>) => command("journal", { trade_id: tradeId, fields }),
     [command],
@@ -211,7 +214,23 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
           </div>
         </header>
 
-        <section className="chart-card card">
+        <div className="tabs-row view-switch" role="tablist" aria-label="Main view">
+          <button className={view === "chart" ? "active" : ""} onClick={() => setView("chart")}>
+            Chart
+          </button>
+          <button className={view === "performance" ? "active" : ""} onClick={() => setView("performance")}>
+            Performance
+          </button>
+        </div>
+
+        {view === "performance" && (
+          <section className="card performance-card">
+            <PerformancePanel account={account} request={requestAnalytics} />
+          </section>
+        )}
+
+        {/* The chart stays mounted (just hidden) so it keeps updating while you look at stats. */}
+        <section className="chart-card card" style={view === "chart" ? undefined : { display: "none" }}>
           <PriceChart ref={chart} />
           {marketQuiet && (
             <div className="overlay top">
