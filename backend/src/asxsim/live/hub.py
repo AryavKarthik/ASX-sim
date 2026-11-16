@@ -13,13 +13,14 @@ import contextlib
 import json
 import logging
 from collections.abc import Callable
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
+from asxsim.analytics.performance import performance
 from asxsim.data.universe import recording_universe
 from asxsim.journal.journal import Journal, JournalEntry, JournalError, parse_entry, r_multiple
 from asxsim.journal.trades import build_trades
@@ -149,6 +150,7 @@ class LiveHub:
         feed_factory: FeedFactory,
         engine: ExecutionEngine | None = None,
         journal: Journal | None = None,
+        day_bars: Callable[[date], pd.DataFrame] | None = None,  # recorded bars, for the benchmark
         history: HistoryLoader | None = None,
         state_path: Path | None = None,
         max_live_lag: timedelta | None = MAX_LIVE_LAG,
@@ -159,6 +161,7 @@ class LiveHub:
         self.source = source
         self.engine = engine or ExecutionEngine()
         self.journal = journal or Journal()
+        self._day_bars = day_bars
         self.market = LiveMarket([], max_live_lag=max_live_lag)
         self.session_day = session_day
         self.clients: set[Client] = set()
@@ -378,6 +381,74 @@ class LiveHub:
         except JournalError as exc:
             raise OrderRejectedError(str(exc)) from exc
         self.broadcast({"type": "account", "account": self.account_json(), "fills": []})
+
+    def benchmark(self, start: datetime, now: datetime) -> list[tuple[datetime, float]]:
+        """S&P/ASX 200 (XJO) levels from `start` to `now`.
+
+        Uses recorded bars for past days (the level at or before `start`, then each day's
+        close), plus today's live XJO candles and latest price when XJO is being streamed.
+        """
+        points: dict[datetime, float] = {}
+
+        def add(frame: pd.DataFrame) -> None:
+            # Never look past the market clock: in a demo the recorded day continues after
+            # "now", and using it would reveal the future.
+            frame = frame[frame["ts"] <= now]
+            before = frame[frame["ts"] <= start]
+            if not before.empty:
+                row = before.iloc[-1]
+                points[row["ts"].to_pydatetime()] = float(row["close"])
+            after = frame[frame["ts"] > start]
+            if not after.empty:
+                row = after.iloc[-1]
+                points[row["ts"].to_pydatetime()] = float(row["close"])
+
+        if self._day_bars is not None:
+            day, last = start.astimezone(SYDNEY).date(), now.astimezone(SYDNEY).date()
+            while day <= last:
+                try:
+                    frame = self._day_bars(day)
+                except Exception:  # no recording for that day (weekend, holiday, not pulled)
+                    frame = None
+                if frame is not None:
+                    xjo = frame[frame["symbol"] == "XJO"].sort_values("ts")
+                    if not xjo.empty:
+                        add(xjo)
+                day += timedelta(days=1)
+
+        if "XJO" in self.market.symbols:
+            candles = self.market.candles("XJO")
+            if candles:
+                add(
+                    pd.DataFrame(
+                        {
+                            "ts": pd.to_datetime([c.time for c in candles], utc=True),
+                            "close": [c.close for c in candles],
+                        }
+                    )
+                )
+            quote = self.market.quote("XJO")
+            if quote is not None and start < quote.time <= now:
+                points[quote.time] = quote.price
+        return sorted(points.items())
+
+    def analytics_json(self) -> dict[str, Any]:
+        account = self.engine.account
+        prices = {s: q.last for s, q in self.engine.quotes.items()}
+        trades = build_trades(account.fills)
+        now = self.market.market_now(self._clock())
+        start = min((t.opened_at for t in trades), default=now)
+        return performance(
+            account.starting_cash,
+            account.equity(prices),
+            account.realised,
+            account.unrealised(prices),
+            account.fees_paid,
+            trades,
+            self.journal.entry_for,
+            now,
+            self.benchmark(start, now) if trades else [],
+        )
 
     def trades_json(self, prices: dict[str, Decimal]) -> list[dict[str, Any]]:
         """Round-trip trades, newest first, each with its journal entry and R-multiple."""

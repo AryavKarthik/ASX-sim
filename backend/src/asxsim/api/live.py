@@ -85,6 +85,7 @@ def get_live_hub() -> LiveHub:
         yahoo_feed_factory,
         engine=load_engine(path),
         journal=Journal(state_dir() / "live_journal.json"),
+        day_bars=get_store().load_day,
         history=fetch_recent_session,
         state_path=path,
     )
@@ -99,6 +100,7 @@ def demo_hub(store: LocalBarStore, day: date | None, speed: float) -> LiveHub:
         lambda market: DemoFeed(bars, speed=speed),
         max_live_lag=None,  # a demo replays an old day: every lag is "live" there
         fixed_symbols=symbols,  # stream the whole day once, so watchlist changes don't restart it
+        day_bars=store.load_day,
         session_day=demo_day.isoformat(),
     )
 
@@ -135,6 +137,8 @@ def handle_command(hub: LiveHub, message: dict[str, Any]) -> dict[str, Any] | No
             except InvalidOperation as exc:
                 raise OrderRejectedError("Enter a starting cash amount") from exc
             hub.reset(cash)
+        elif action == "analytics":
+            reply["analytics"] = hub.analytics_json()
         elif action == "journal":
             fields = message.get("fields")
             if not isinstance(fields, dict):
