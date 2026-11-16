@@ -133,6 +133,60 @@ export type TradeView = {
 
 export type JournalOptions = { setups: string[]; emotions: string[] };
 
+export type GroupStats = {
+  trades: number;
+  win_rate: number | null;
+  net_pnl: number | null;
+  average_r: number | null;
+};
+
+export type Analytics = {
+  summary: {
+    starting_cash: number;
+    equity: number;
+    net_pnl: number;
+    total_return_pct: number | null;
+    realised: number;
+    unrealised: number;
+    fees: number;
+    fees_pct_of_gross_profit: number | null;
+    benchmark_return_pct: number | null;
+  };
+  trades: {
+    closed: number;
+    open: number;
+    wins: number;
+    losses: number;
+    win_rate: number | null;
+    average_win: number | null;
+    average_loss: number | null;
+    payoff_ratio: number | null;
+    profit_factor: number | null;
+    expectancy: number | null;
+    average_r: number | null;
+    best: number | null;
+    worst: number | null;
+    average_holding_minutes: number | null;
+  };
+  risk: {
+    max_drawdown: number;
+    max_drawdown_pct: number;
+    sharpe: number | null;
+    sharpe_days_needed: number;
+  };
+  curve: { time: number; equity: number }[];
+  benchmark: { time: number; equity: number }[];
+  by_setup: ({ label: string } & GroupStats)[];
+  by_time: ({ label: string } & GroupStats)[];
+  by_symbol: ({ label: string } & GroupStats)[];
+  discipline: {
+    planned_pct: number | null;
+    reviewed: number;
+    followed: GroupStats;
+    broke: GroupStats;
+  };
+};
+
 /** What the order ticket can send as the trade's plan. */
 export type TradePlan = {
   setup?: string;
@@ -143,7 +197,7 @@ export type TradePlan = {
 };
 
 export type CommandResult =
-  | { type: "result"; request_id: string; action: string; ok: true; order?: OrderView }
+  | { type: "result"; request_id: string; action: string; ok: true; order?: OrderView; analytics?: Analytics }
   | { type: "result"; request_id: string; action: string; ok: false; error: string };
 
 export type OrderCommand = {

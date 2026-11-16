@@ -880,3 +880,96 @@ tr.selected-row {
 .input-row label input {
   width: 100%;
 }
+
+/* ---------- performance ---------- */
+
+.view-switch {
+  margin-bottom: -4px;
+}
+
+.performance-card {
+  padding: 14px;
+}
+
+.performance {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0f151d;
+  cursor: help;
+}
+
+.tile-label {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.tile-value {
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.tile-sub {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.card-inner {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.card-inner h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.equity-chart {
+  height: 280px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.legend i {
+  display: inline-block;
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.groups {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .groups {
+    grid-template-columns: 1fr;
+  }
+}

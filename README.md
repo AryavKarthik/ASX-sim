@@ -60,10 +60,14 @@ running 20 minutes behind.**
     before you buy,
   - review each trade (followed the plan?, what went well, what to improve, emotions, rating),
   - each trade's **R-multiple** (P&L in units of the risk you planned) is worked out for you.
-- **Analytics:**
-  - equity curve vs the ASX 200,
-  - win rate, profit factor, expectancy, max drawdown, Sharpe,
-  - performance broken down by setup.
+- **Performance analytics** (the Performance view):
+  - equity curve against the ASX 200 rescaled to your starting cash. The index never uses
+    data past the market clock, so a demo can't leak the rest of the day,
+  - net P&L and return vs the ASX 200, win rate, profit factor, payoff ratio, expectancy,
+    average R, max drawdown, Sharpe ratio (once there are 5+ trading days), fees as a share of
+    gross profit,
+  - results by setup, by time of day and by stock, and a discipline check comparing trades
+    where you followed your plan with trades where you didn't.
 - **AI coach (Claude):** knows your chart, positions and journal, and coaches you during the
   session and afterwards.
 
@@ -157,7 +161,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Trading on the live market:** order ticket (market and limit), fills at the delayed prices shown with spread, liquidity caps, partial fills and opening/closing auctions, ASX rules ($500 first parcel, price steps, no shorting), brokerage, cash, buying power, holdings, P&L, positions/orders/fills, saved account → `v0.1`
 - [x] **Week 2, part 1:** stop, stop-limit and trailing-stop orders (broker-side conditional orders), good-till-cancelled orders, T+2 settlement
 - [x] **Week 2, part 2:** trade journal (round-trip trades, plan on the ticket, review, R-multiple) and a price refresh setting (Live / 5s / 30s)
-- [ ] **Week 2, next:** performance analytics, chart indicators and timeframes, trading halts
+- [x] **Week 2, part 3:** performance analytics (equity vs ASX 200, trade statistics, drawdown, Sharpe, breakdowns, discipline)
+- [ ] **Week 2, next:** chart indicators and timeframes, trading halts
 - [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`
 - [ ] **Secondary:** trading inside past-day replay, daily replay over longer periods
 - [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options
