@@ -34,6 +34,7 @@ from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from asxsim.api.deps import get_store
 from asxsim.data.store import LocalBarStore, NoDataError
 from asxsim.data.universe import BENCHMARKS, recording_universe, security_names
+from asxsim.journal.journal import EMOTIONS, SETUPS, Journal
 from asxsim.live.feeds import (
     DemoFeed,
     FallbackFeed,
@@ -83,6 +84,7 @@ def get_live_hub() -> LiveHub:
         "live",
         yahoo_feed_factory,
         engine=load_engine(path),
+        journal=Journal(state_dir() / "live_journal.json"),
         history=fetch_recent_session,
         state_path=path,
     )
@@ -109,6 +111,7 @@ def defaults() -> dict[str, Any]:
     return {
         "watchlist": DEFAULT_WATCHLIST,
         "max_symbols": MAX_SYMBOLS,
+        "journal": {"setups": SETUPS, "emotions": EMOTIONS},
         "universe": [{"code": c, "name": names.get(c, c)} for c in universe],
     }
 
@@ -132,6 +135,11 @@ def handle_command(hub: LiveHub, message: dict[str, Any]) -> dict[str, Any] | No
             except InvalidOperation as exc:
                 raise OrderRejectedError("Enter a starting cash amount") from exc
             hub.reset(cash)
+        elif action == "journal":
+            fields = message.get("fields")
+            if not isinstance(fields, dict):
+                raise OrderRejectedError("Journal fields are missing")
+            hub.update_journal(str(message.get("trade_id")), fields)
         else:
             raise OrderRejectedError(f"Unknown action {action!r}")
     except OrderRejectedError as exc:

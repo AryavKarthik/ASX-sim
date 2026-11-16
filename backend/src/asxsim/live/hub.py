@@ -21,6 +21,8 @@ from typing import Any
 import pandas as pd
 
 from asxsim.data.universe import recording_universe
+from asxsim.journal.journal import Journal, JournalEntry, JournalError, parse_entry, r_multiple
+from asxsim.journal.trades import build_trades
 from asxsim.live.candles import candles_from_bars, sydney_epoch
 from asxsim.live.feeds import PriceFeed
 from asxsim.live.market import MAX_LIVE_LAG, LiveMarket
@@ -146,6 +148,7 @@ class LiveHub:
         source: str,
         feed_factory: FeedFactory,
         engine: ExecutionEngine | None = None,
+        journal: Journal | None = None,
         history: HistoryLoader | None = None,
         state_path: Path | None = None,
         max_live_lag: timedelta | None = MAX_LIVE_LAG,
@@ -155,6 +158,7 @@ class LiveHub:
     ) -> None:
         self.source = source
         self.engine = engine or ExecutionEngine()
+        self.journal = journal or Journal()
         self.market = LiveMarket([], max_live_lag=max_live_lag)
         self.session_day = session_day
         self.clients: set[Client] = set()
@@ -329,7 +333,17 @@ class LiveHub:
 
     def submit(self, payload: dict[str, Any]) -> dict[str, Any]:
         request = parse_order(payload)
+        plan = payload.get("plan")
+        if plan is not None:
+            if not isinstance(plan, dict):
+                raise OrderRejectedError("The trade plan must be a set of fields")
+            try:  # check the plan before placing the order, so a bad plan can't half-succeed
+                parse_entry(plan, JournalEntry())
+            except JournalError as exc:
+                raise OrderRejectedError(str(exc)) from exc
         order, fills = self.engine.submit(request, self.market.market_now(self._clock()))
+        if plan:
+            self.journal.attach_plan(order.id, plan)
         self.save()
         self.broadcast(
             {
@@ -351,8 +365,54 @@ class LiveHub:
             raise OrderRejectedError("Starting cash must be between $1,000 and $10,000,000")
         self.engine.account = Account.opened_with(starting_cash.quantize(Decimal("0.01")))
         self.engine.orders = {}
+        self.journal.clear()  # the trades it described no longer exist
         self.save()
         self.broadcast({"type": "account", "account": self.account_json(), "fills": []})
+
+    def update_journal(self, trade_id: str, fields: dict[str, Any]) -> None:
+        trade = next((t for t in build_trades(self.engine.account.fills) if t.id == trade_id), None)
+        if trade is None:
+            raise OrderRejectedError(f"No trade {trade_id}")
+        try:
+            self.journal.update(trade, fields)
+        except JournalError as exc:
+            raise OrderRejectedError(str(exc)) from exc
+        self.broadcast({"type": "account", "account": self.account_json(), "fills": []})
+
+    def trades_json(self, prices: dict[str, Decimal]) -> list[dict[str, Any]]:
+        """Round-trip trades, newest first, each with its journal entry and R-multiple."""
+        rows = []
+        for trade in reversed(build_trades(self.engine.account.fills)[-RECENT_ROWS:]):
+            entry = self.journal.entry_for(trade)
+            r = r_multiple(trade, entry)
+            last = prices.get(trade.symbol)
+            end = trade.closed_at or self.market.market_now(self._clock())
+            rows.append(
+                {
+                    "id": trade.id,
+                    "symbol": trade.symbol,
+                    "status": "open" if trade.is_open else "closed",
+                    "opened_at": trade.opened_at.isoformat(),
+                    "closed_at": None if trade.closed_at is None else trade.closed_at.isoformat(),
+                    "holding_minutes": max(0, round((end - trade.opened_at).total_seconds() / 60)),
+                    "entry_quantity": trade.entry_quantity,
+                    "exit_quantity": trade.exit_quantity,
+                    "open_quantity": trade.open_quantity,
+                    "average_entry": price_text(trade.average_entry),
+                    "average_exit": None
+                    if trade.average_exit is None
+                    else price_text(trade.average_exit),
+                    "gross_pnl": str(round(trade.gross_pnl, 2)),
+                    "fees": str(round(trade.fees, 2)),
+                    "net_pnl": str(round(trade.net_pnl, 2)),
+                    "unrealised": None
+                    if not trade.is_open or last is None
+                    else str(round(trade.unrealised(last), 2)),
+                    "r_multiple": None if r is None else round(float(r), 2),
+                    "journal": entry.to_json(),
+                }
+            )
+        return rows
 
     def account_json(self) -> dict[str, Any]:
         engine, account = self.engine, self.engine.account
@@ -400,6 +460,7 @@ class LiveHub:
             "orders": [o.to_view() for o in orders[:RECENT_ROWS]],
             "fills": [f.to_json() for f in reversed(account.fills[-RECENT_ROWS:])],
             "brokerage": engine.brokerage.to_json(),
+            "trades": self.trades_json(prices),
         }
 
     def snapshot(self, symbols: list[str]) -> dict[str, Any]:
