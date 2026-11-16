@@ -64,7 +64,7 @@ export function ReplayView({ sessionId, onExit }: { sessionId: string; onExit: (
       </header>
 
       <section className="chart-card card">
-        <PriceChart ref={chart} />
+        <PriceChart ref={chart} symbol={state?.symbol ?? ""} sessionDay={state?.day ?? null} />
         {state && state.bars_visible === 0 && (
           <div className="overlay">
             <strong>{PHASE_LABELS[state.phase]}</strong>

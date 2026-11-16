@@ -231,7 +231,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
 
         {/* The chart stays mounted (just hidden) so it keeps updating while you look at stats. */}
         <section className="chart-card card" style={view === "chart" ? undefined : { display: "none" }}>
-          <PriceChart ref={chart} />
+          <PriceChart ref={chart} symbol={selected} sessionDay={sessionDay} />
           {marketQuiet && (
             <div className="overlay top">
               <strong>The ASX is closed</strong>
