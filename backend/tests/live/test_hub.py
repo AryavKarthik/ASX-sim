@@ -142,6 +142,54 @@ def test_a_bad_plan_rejects_the_order_before_it_is_placed(tmp_path: Path) -> Non
     assert hub.engine.orders == {}
 
 
+def test_analytics_compares_with_the_asx_200(tmp_path: Path) -> None:
+    clock = {"now": WALL_CLOCK}
+    hub = LiveHub("live", lambda m: NoFeed(), clock=lambda: clock["now"])
+    prime(hub)
+    hub.market.watch(["XJO"])
+    hub.on_tick(Tick("XJO", 8000.0, MARKET_TIME - timedelta(minutes=2)))
+    hub.submit({"symbol": "BHP", "side": "buy", "type": "market", "quantity": 100})
+
+    clock["now"] += timedelta(minutes=3)  # time passes; the index moves before we sell
+    hub.on_tick(Tick("XJO", 8040.0, MARKET_TIME + timedelta(minutes=1)))
+    hub.submit({"symbol": "BHP", "side": "sell", "type": "market", "quantity": 100})
+
+    data = hub.analytics_json()
+
+    assert data["trades"]["closed"] == 1
+    assert data["summary"]["net_pnl"] == -21.0
+    assert data["summary"]["benchmark_return_pct"] == 0.5  # XJO 8000 -> 8040
+    assert data["benchmark"][0]["equity"] == 50000.0
+
+
+def test_benchmark_never_uses_index_data_after_the_market_clock(tmp_path: Path) -> None:
+    """A demo replays a recorded day: the rest of that day must stay invisible."""
+    import pandas as pd
+
+    now = MARKET_TIME  # what the hub's clock says the market time is
+    recorded = pd.DataFrame(
+        {
+            "symbol": ["XJO", "XJO", "XJO"],
+            "ts": pd.to_datetime(
+                [now - timedelta(minutes=30), now - timedelta(minutes=1), now + timedelta(hours=5)],
+                utc=True,
+            ),
+            "close": [8000.0, 8010.0, 7500.0],  # the 7500 close hasn't happened yet
+        }
+    )
+    hub = LiveHub(
+        "demo",
+        lambda m: NoFeed(),
+        clock=lambda: WALL_CLOCK,
+        day_bars=lambda day: recorded,
+    )
+
+    points = hub.benchmark(now - timedelta(minutes=10), now)
+
+    assert [v for _, v in points] == [8000.0, 8010.0]
+    assert all(t <= now for t, _ in points)
+
+
 def test_reset_rejects_silly_amounts(tmp_path: Path) -> None:
     with pytest.raises(OrderRejectedError, match="between"):
         make_hub(tmp_path).reset(Decimal("5"))
