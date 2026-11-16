@@ -46,6 +46,30 @@ it shouldn't be absurdly harsh either.
   `~/.asxsim/live_account.json` after every change, written atomically, and kept outside
   the repository. A demo uses its own throwaway account.
 
+## Addendum: conditional orders, good-till-cancelled, T+2 (2026-11-16)
+
+- **Stops are broker-side conditional orders,** as on the ASX. The exchange only has limit
+  and market-to-limit orders; your broker watches the last traded price.
+  - A stop, stop-limit or trailing stop waits in a *pending* status.
+  - It triggers on a trade during continuous trading: at or below the trigger for a sell,
+    at or above for a buy. Auction prices don't trigger it.
+  - Once triggered it becomes a market order (stop, trailing stop) or a limit order
+    (stop-limit) and executes immediately under the fill rules above.
+  - Pending sell stops reserve their shares.
+- **Trailing stops** move their trigger with the best price since they were placed (a $ or %
+  distance, rounded to a valid price step). The trigger never moves against you.
+- **Good-till-cancelled** orders (limit and conditional; market orders are day-only):
+  - they survive the close,
+  - they roll onto each new trading day, rejoining the opening auction if they're rolled
+    before it,
+  - they expire after 30 days.
+- **The closing auction runs once** per symbol per day. A later print can't rerun it for GTC
+  orders.
+- **T+2 settlement:** each fill records its settlement date, two ASX trading days later
+  (skipping weekends and holidays). The account shows settled cash and what is still
+  pending. As with Australian brokers, unsettled proceeds can still be traded with, so
+  buying power is unchanged.
+
 ## Consequences
 
 - Results include realistic frictions: spread, brokerage, partial fills and missed limit fills.
