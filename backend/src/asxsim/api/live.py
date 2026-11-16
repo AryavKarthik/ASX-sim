@@ -29,9 +29,10 @@ from decimal import Decimal, InvalidOperation
 from functools import cache
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 from asxsim.api.deps import get_store
+from asxsim.data import history
 from asxsim.data.store import LocalBarStore, NoDataError
 from asxsim.data.universe import BENCHMARKS, recording_universe, security_names
 from asxsim.journal.journal import EMOTIONS, SETUPS, Journal
@@ -103,6 +104,23 @@ def demo_hub(store: LocalBarStore, day: date | None, speed: float) -> LiveHub:
         day_bars=store.load_day,
         session_day=demo_day.isoformat(),
     )
+
+
+@router.get("/history")
+async def price_history(
+    symbol: Annotated[str, Query()],
+    interval: Annotated[str, Query(pattern="^(1d|1wk|1mo)$")] = "1d",
+    until: Annotated[date | None, Query()] = None,
+) -> dict[str, Any]:
+    """Daily, weekly or monthly bars. `until` excludes that date and later (used by demos)."""
+    code = symbol.strip().upper()
+    if code not in recording_universe():
+        raise HTTPException(status_code=404, detail=f"Unknown ASX code {code}")
+    try:
+        bars = await asyncio.to_thread(history.history, code, interval, until)
+    except Exception as exc:  # Yahoo unavailable
+        raise HTTPException(status_code=502, detail=f"Couldn't load history: {exc}") from exc
+    return {"symbol": code, "interval": interval, "bars": bars}
 
 
 @router.get("/defaults")
