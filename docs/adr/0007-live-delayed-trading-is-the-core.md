@@ -50,6 +50,21 @@ the real market does, and as long as ASX-sim is the only place the trader watche
   `WS /api/live/ws`. Switching stocks is instant because every symbol's candles are already
   in memory.
 
+## Verified on a live session (Mon 16 Nov 2026, about 3:30pm Sydney)
+
+Measured with `python -m asxsim.live.probe` (60 seconds, 10 symbols):
+
+| | Result |
+|---|---|
+| Update frequency | about every **1 s** for the busiest stocks (BHP, CBA, CSL, PLS), 2-4 s for others, 30 s for the XJO index |
+| Delay | **20.0 minutes** for every symbol (the app showed "Delayed 20m 03s") |
+| Bid / ask | sent for most stocks, so fills use real spreads, not the one-tick estimate |
+| Missing fields | `previous_close`, `open_price`, `day_high`, `day_low` |
+
+To fill the missing fields, the previous close is recovered from Yahoo's `change` field
+(price minus previous close), and the open and day range are worked out from today's
+candles.
+
 ## Consequences
 
 - Practice happens during real market hours (about 10:20am to 4:30pm Sydney time with the
