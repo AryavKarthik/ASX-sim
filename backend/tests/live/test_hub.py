@@ -102,6 +102,46 @@ def test_parse_order_validates_input() -> None:
         )
 
 
+def test_trade_plan_from_the_ticket_and_review_show_up_in_the_journal(tmp_path: Path) -> None:
+    hub = make_hub(tmp_path)
+    prime(hub)
+    hub.submit(
+        {
+            "symbol": "BHP",
+            "side": "buy",
+            "type": "market",
+            "quantity": 100,
+            "plan": {"setup": "Breakout", "thesis": "Above VWAP", "planned_stop": "59.00"},
+        }
+    )
+    hub.submit({"symbol": "BHP", "side": "sell", "type": "market", "quantity": 100})
+
+    (trade,) = hub.account_json()["trades"]
+    assert trade["status"] == "closed"
+    assert trade["journal"]["setup"] == "Breakout"
+    assert trade["net_pnl"] == "-21.00"  # bought 59.27, sold 59.26, $20 brokerage
+    assert trade["r_multiple"] == pytest.approx(-0.78, abs=0.01)  # -21 / (0.27 x 100)
+
+    hub.update_journal(trade["id"], {"followed_plan": True, "rating": 3})
+    assert hub.account_json()["trades"][0]["journal"]["rating"] == 3
+
+
+def test_a_bad_plan_rejects_the_order_before_it_is_placed(tmp_path: Path) -> None:
+    hub = make_hub(tmp_path)
+    prime(hub)
+    with pytest.raises(OrderRejectedError, match="Confidence"):
+        hub.submit(
+            {
+                "symbol": "BHP",
+                "side": "buy",
+                "type": "market",
+                "quantity": 100,
+                "plan": {"confidence": 9},
+            }
+        )
+    assert hub.engine.orders == {}
+
+
 def test_reset_rejects_silly_amounts(tmp_path: Path) -> None:
     with pytest.raises(OrderRejectedError, match="between"):
         make_hub(tmp_path).reset(Decimal("5"))
