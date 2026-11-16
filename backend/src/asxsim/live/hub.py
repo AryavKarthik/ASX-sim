@@ -29,7 +29,7 @@ from asxsim.market.calendar import SYDNEY
 from asxsim.market.ticks import clean_reported_price
 from asxsim.trading.account import Account
 from asxsim.trading.engine import ExecutionEngine, MarketQuote, OrderRejectedError
-from asxsim.trading.orders import OrderRequest, OrderType, Side, price_text
+from asxsim.trading.orders import OrderRequest, OrderType, Side, TimeInForce, price_text
 
 log = logging.getLogger("asxsim.live")
 
@@ -79,18 +79,44 @@ def parse_order(payload: dict[str, Any]) -> OrderRequest:
     try:
         side = Side(str(payload.get("side")))
         kind = OrderType(str(payload.get("type")))
+        time_in_force = TimeInForce(str(payload.get("time_in_force") or "day"))
     except ValueError as exc:
-        raise OrderRejectedError("Choose buy or sell, and market or limit") from exc
+        raise OrderRejectedError("Choose buy or sell, an order type and day or GTC") from exc
     quantity = payload.get("quantity")
     if not isinstance(quantity, int) or isinstance(quantity, bool):
         raise OrderRejectedError("Quantity must be a whole number of shares")
-    limit_price: Decimal | None = None
-    if kind is OrderType.LIMIT:
+
+    def number(field: str, label: str, needed: bool) -> Decimal | None:
+        raw = payload.get(field)
+        if raw in (None, ""):
+            if needed:
+                raise OrderRejectedError(f"Enter a {label}")
+            return None
         try:
-            limit_price = Decimal(str(payload.get("limit_price")))
+            return Decimal(str(raw))
         except InvalidOperation as exc:
-            raise OrderRejectedError("Enter a limit price") from exc
-    return OrderRequest(symbol, side, kind, quantity, limit_price)
+            raise OrderRejectedError(f"Enter a valid {label}") from exc
+
+    limit_price = number(
+        "limit_price", "limit price", kind in (OrderType.LIMIT, OrderType.STOP_LIMIT)
+    )
+    trigger_price = number(
+        "trigger_price", "trigger price", kind in (OrderType.STOP, OrderType.STOP_LIMIT)
+    )
+    trailing = kind is OrderType.TRAILING_STOP
+    trail_amount = number("trail_amount", "trail amount", False) if trailing else None
+    trail_percent = number("trail_percent", "trail percentage", False) if trailing else None
+    return OrderRequest(
+        symbol,
+        side,
+        kind,
+        quantity,
+        limit_price if kind in (OrderType.LIMIT, OrderType.STOP_LIMIT) else None,
+        trigger_price if kind in (OrderType.STOP, OrderType.STOP_LIMIT) else None,
+        trail_amount,
+        trail_percent,
+        time_in_force,
+    )
 
 
 def load_engine(path: Path | None) -> ExecutionEngine:
@@ -256,7 +282,9 @@ class LiveHub:
             },
             symbol=update.symbol,
         )
-        if fills:
+        # Fills, or an open order that changed without filling (a trailing stop's trigger
+        # moved), are saved and shown.
+        if self.engine.take_changes() or fills:
             self.save()
             self.broadcast(
                 {
@@ -352,9 +380,15 @@ class LiveHub:
             )
         equity = account.equity(prices)
         orders = sorted(engine.orders.values(), key=lambda o: o.created_at, reverse=True)
+        today = self.market.market_now(self._clock()).astimezone(SYDNEY).date()
         return {
             "starting_cash": str(account.starting_cash),
             "cash": str(round(account.cash, 2)),
+            "settled_cash": str(round(account.settled_cash(today), 2)),
+            "pending_settlement": [
+                {"date": day.isoformat(), "amount": str(round(amount, 2))}
+                for day, amount in account.pending_settlement(today)
+            ],
             "buying_power": str(round(engine.buying_power(), 2)),
             "market_value": str(round(account.market_value(prices), 2)),
             "equity": str(round(equity, 2)),

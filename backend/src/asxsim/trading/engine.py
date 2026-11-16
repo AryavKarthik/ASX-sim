@@ -37,6 +37,7 @@ from asxsim.market.ticks import Rounding, is_valid_price, next_tick_up, round_to
 from asxsim.trading.account import Account
 from asxsim.trading.brokerage import Brokerage
 from asxsim.trading.orders import (
+    GTC_MAX_DAYS,
     Auction,
     Fill,
     Order,
@@ -44,6 +45,7 @@ from asxsim.trading.orders import (
     OrderStatus,
     OrderType,
     Side,
+    TimeInForce,
 )
 
 PARTICIPATION = 0.25
@@ -88,7 +90,14 @@ class ExecutionEngine:
         self._calendar = calendar or asx_calendar()
         self._seed = seed
         self._schedules: dict[date, DaySchedule] = {}
+        self._closed: set[tuple[str, date]] = set()  # (symbol, day) whose close auction ran
+        self._changed = False  # an open order changed without filling (e.g. a trail moved)
         self._ids = itertools.count(1)
+
+    def take_changes(self) -> bool:
+        """True (once) if an open order changed without a fill since the last call."""
+        changed, self._changed = self._changed, False
+        return changed
 
     # ------------------------------------------------------------------ helpers
 
@@ -111,6 +120,8 @@ class ExecutionEngine:
     def _estimate_price(self, order_or_request: Order | OrderRequest) -> Decimal | None:
         if order_or_request.limit_price is not None:
             return order_or_request.limit_price
+        if order_or_request.trigger_price is not None:
+            return order_or_request.trigger_price
         quote = self.quotes.get(order_or_request.symbol)
         if quote is None:
             return None
@@ -145,13 +156,14 @@ class ExecutionEngine:
         session = local.date()
         auction: Auction | None = None
         status = OrderStatus.WORKING
-        if phase is MarketPhase.PRE_OPEN:
+        if phase is MarketPhase.ADJUST_ON:
+            session = self._calendar.next_trading_day(session)
+        if request.type.is_conditional:
+            status = OrderStatus.PENDING  # waits for its trigger, whatever the phase
+        elif phase in (MarketPhase.PRE_OPEN, MarketPhase.ADJUST_ON):
             auction, status = Auction.OPEN, OrderStatus.QUEUED
         elif phase is MarketPhase.PRE_CSPA:
             auction, status = Auction.CLOSE, OrderStatus.QUEUED
-        elif phase is MarketPhase.ADJUST_ON:
-            auction, status = Auction.OPEN, OrderStatus.QUEUED
-            session = self._calendar.next_trading_day(session)
 
         order = Order(
             id=f"O{next(self._ids):05d}",
@@ -164,7 +176,16 @@ class ExecutionEngine:
             session=session,
             status=status,
             auction=auction,
+            time_in_force=request.time_in_force,
+            expires_on=session + timedelta(days=GTC_MAX_DAYS)
+            if request.time_in_force is TimeInForce.GTC
+            else None,
+            trigger_price=request.trigger_price,
+            trail_amount=request.trail_amount,
+            trail_percent=request.trail_percent,
         )
+        if order.type is OrderType.TRAILING_STOP:
+            self._update_trail(order, self.quotes[order.symbol].last)
         self.orders[order.id] = order
         fills: list[Fill] = []
         if status is OrderStatus.WORKING:
@@ -194,19 +215,41 @@ class ExecutionEngine:
             raise OrderRejectedError(
                 f"No price for {request.symbol} yet. Wait for the first live price."
             )
-        if request.type is OrderType.LIMIT:
-            price = request.limit_price
-            if price is None or price <= 0:
-                raise OrderRejectedError("A limit order needs a price")
-            if not is_valid_price(price):
-                lower = round_to_tick(price, Rounding.DOWN)
-                upper = round_to_tick(price, Rounding.UP)
-                raise OrderRejectedError(
-                    f"${price} isn't a valid ASX price step. "
-                    f"Nearest valid prices: ${lower} or ${upper}"
-                )
+        kind = request.type
+        if kind in (OrderType.LIMIT, OrderType.STOP_LIMIT):
+            self._check_price("limit", request.limit_price)
         elif request.limit_price is not None:
-            raise OrderRejectedError("Market orders don't take a price")
+            raise OrderRejectedError("Only limit and stop-limit orders take a limit price")
+
+        if kind in (OrderType.STOP, OrderType.STOP_LIMIT):
+            trigger = self._check_price("trigger", request.trigger_price)
+            last = quote.last
+            if request.side is Side.SELL and trigger >= last:
+                raise OrderRejectedError(
+                    f"A sell stop's trigger must be below the current price (${last}). "
+                    "It sells if the price falls to the trigger."
+                )
+            if request.side is Side.BUY and trigger <= last:
+                raise OrderRejectedError(
+                    f"A buy stop's trigger must be above the current price (${last}). "
+                    "It buys if the price rises to the trigger."
+                )
+        elif request.trigger_price is not None:
+            raise OrderRejectedError("Only stop and stop-limit orders take a trigger price")
+
+        if kind is OrderType.TRAILING_STOP:
+            amount, percent = request.trail_amount, request.trail_percent
+            if (amount is None) == (percent is None):
+                raise OrderRejectedError("Set the trail as either a dollar amount or a percentage")
+            if amount is not None and amount <= 0:
+                raise OrderRejectedError("The trail amount must be above zero")
+            if percent is not None and not 0 < percent <= 50:
+                raise OrderRejectedError("The trail percentage must be between 0% and 50%")
+        elif request.trail_amount is not None or request.trail_percent is not None:
+            raise OrderRejectedError("Only trailing stops take a trail")
+
+        if request.time_in_force is TimeInForce.GTC and kind is OrderType.MARKET:
+            raise OrderRejectedError("Market orders can only be day orders")
 
         phase = self.phase_at(now)
         if not phase.accepts_new_orders:
@@ -251,7 +294,71 @@ class ExecutionEngine:
                 f"you have ${self.buying_power():,.2f}"
             )
 
+    @staticmethod
+    def _check_price(label: str, price: Decimal | None) -> Decimal:
+        if price is None or price <= 0:
+            raise OrderRejectedError(f"Enter a {label} price")
+        if not is_valid_price(price):
+            lower = round_to_tick(price, Rounding.DOWN)
+            upper = round_to_tick(price, Rounding.UP)
+            raise OrderRejectedError(
+                f"${price} isn't a valid ASX price step. Nearest valid prices: ${lower} or ${upper}"
+            )
+        return price
+
+    # ------------------------------------------------------------------ conditional orders
+
+    @staticmethod
+    def _trail_trigger(order: Order, extreme: Decimal) -> Decimal:
+        distance = (
+            order.trail_amount
+            if order.trail_amount is not None
+            else extreme * (order.trail_percent or Decimal("0")) / 100
+        )
+        if order.side is Side.SELL:
+            return round_to_tick(max(extreme - distance, Decimal("0.001")), Rounding.DOWN)
+        return round_to_tick(extreme + distance, Rounding.UP)
+
+    def _update_trail(self, order: Order, price: Decimal) -> None:
+        """Move a trailing stop's trigger with the best price since it was placed."""
+        extreme = order.trail_extreme if order.trail_extreme is not None else price
+        extreme = max(extreme, price) if order.side is Side.SELL else min(extreme, price)
+        order.trail_extreme = extreme
+        trigger = self._trail_trigger(order, extreme)
+        if trigger != order.trigger_price:
+            self._changed = True
+        order.trigger_price = trigger
+
+    def _check_triggers(
+        self, symbol: str, price: Decimal, at: datetime
+    ) -> tuple[set[str], list[Fill]]:
+        """Trigger conditional orders on a trade in continuous trading."""
+        triggered: set[str] = set()
+        fills: list[Fill] = []
+        for order in self.open_orders(symbol):
+            if order.status is not OrderStatus.PENDING:
+                continue
+            if order.type is OrderType.TRAILING_STOP:
+                self._update_trail(order, price)
+            trigger = order.trigger_price
+            assert trigger is not None
+            hit = price <= trigger if order.side is Side.SELL else price >= trigger
+            if not hit:
+                continue
+            order.conditional = order.type
+            order.type = OrderType.LIMIT if order.type is OrderType.STOP_LIMIT else OrderType.MARKET
+            order.status = OrderStatus.WORKING
+            order.triggered_at = at
+            order.message = f"Triggered: traded at ${price} (trigger ${trigger})"
+            triggered.add(order.id)
+            fills += self._execute_immediately(order, at)
+        return triggered, fills
+
     # ------------------------------------------------------------------ filling
+
+    def settlement_day(self, trade_day: date) -> date:
+        """T+2: trades settle two ASX trading days after the trade."""
+        return self._calendar.next_trading_day(self._calendar.next_trading_day(trade_day))
 
     def _fill(
         self, order: Order, quantity: int, price: Decimal, at: datetime, liquidity: str
@@ -259,7 +366,10 @@ class ExecutionEngine:
         value_after = (order.average_price or Decimal("0")) * order.filled + price * quantity
         fee = self.brokerage.fee(value_after.quantize(Decimal("0.01"))) - order.fees
         fee = max(fee, Decimal("0"))
-        fill = Fill(order.id, order.symbol, order.side, quantity, price, fee, at, liquidity)
+        settles = self.settlement_day(at.astimezone(SYDNEY).date())
+        fill = Fill(
+            order.id, order.symbol, order.side, quantity, price, fee, at, liquidity, settles
+        )
         order.record_fill(quantity, price, fee)
         self.account.apply(fill)
         return fill
@@ -323,15 +433,22 @@ class ExecutionEngine:
             ):
                 fills += self._auction_fill(order, price, at, "opening auction")
 
-        # Closing auction: everything still open for today takes part, then day orders expire.
+        # Closing auction: orders live in the book take part; then day orders expire and
+        # good-till-cancelled ones wait for tomorrow. (Untriggered stops don't take part.)
         if local >= schedule.closing_auction_at:
+            key = (symbol, local.date())
+            if key in self._closed:
+                return fills  # the closing auction already ran; later prints don't rerun it
+            self._closed.add(key)
             for order in self.open_orders(symbol):
-                if order.session == local.date():
+                if order.session == local.date() and order.status is not OrderStatus.PENDING:
                     fills += self._auction_fill(order, price, at, "closing auction", close=True)
             return fills
 
         if phase is MarketPhase.OPEN:
-            fills += self._continuous(symbol, price, at, volume, bid, ask)
+            triggered, trigger_fills = self._check_triggers(symbol, price, at)
+            fills += trigger_fills
+            fills += self._continuous(symbol, price, at, volume, bid, ask, skip=triggered)
         return fills
 
     def _auction_fill(
@@ -342,7 +459,10 @@ class ExecutionEngine:
         )
         fills = [self._fill(order, order.remaining, price, at, liquidity)] if crosses else []
         if order.status.is_open:
-            if close:
+            if close and order.time_in_force is TimeInForce.GTC:
+                order.status = OrderStatus.WORKING  # stays open for the next trading day
+                order.auction = None
+            elif close:
                 order.status = OrderStatus.EXPIRED
                 order.message = "Didn't fill by the close (day order)"
             else:
@@ -360,11 +480,12 @@ class ExecutionEngine:
         volume: int,
         bid: Decimal | None,
         ask: Decimal | None,
+        skip: set[str] | None = None,
     ) -> list[Fill]:
         fills: list[Fill] = []
         capacity = int(volume * self.participation)
         for order in self.open_orders(symbol):  # oldest first: time priority
-            if order.status is not OrderStatus.WORKING:
+            if order.status is not OrderStatus.WORKING or (skip and order.id in skip):
                 continue
             if order.type is OrderType.MARKET:  # defensive: market remainders become limits
                 fill_price = touch(MarketQuote(price, bid, ask))[1 if order.side is Side.BUY else 0]
@@ -386,24 +507,47 @@ class ExecutionEngine:
         return fills
 
     def expire(self, now: datetime) -> list[Order]:
-        """Expire day orders whose session's closing auction has passed (e.g. no closing trade)."""
+        """End-of-day housekeeping, run often: returns orders that changed.
+
+        - Day orders expire once their session's closing auction has passed.
+        - Good-till-cancelled orders roll onto each new trading day (rejoining the opening
+          auction if it hasn't happened yet) and expire after GTC_MAX_DAYS.
+        """
         local = now.astimezone(SYDNEY)
         today = local.date()
-        expired = []
+        trading_today = self._calendar.is_trading_day(today)
+        changed = []
         for order in self.open_orders():
             if order.session > today:
                 continue  # queued after the close for the next trading day
+            if order.time_in_force is TimeInForce.GTC:
+                if order.expires_on is not None and today > order.expires_on:
+                    order.status = OrderStatus.EXPIRED
+                    order.message = f"Reached the {GTC_MAX_DAYS}-day limit for good-till-cancelled"
+                    changed.append(order)
+                elif order.session < today and trading_today:
+                    order.session = today
+                    before_open = local < self.schedule(today).open_at
+                    if order.status is OrderStatus.WORKING and before_open:
+                        order.status, order.auction = OrderStatus.QUEUED, Auction.OPEN
+                    changed.append(order)
+                continue
             past_session = order.session < today
             after_close = (
                 order.session == today
-                and self._calendar.is_trading_day(today)
+                and trading_today
                 and local >= self.schedule(today).closing_auction_at + timedelta(minutes=1)
             )
             if past_session or after_close:
+                pending = order.status is OrderStatus.PENDING
                 order.status = OrderStatus.EXPIRED
-                order.message = "Didn't fill by the close (day order)"
-                expired.append(order)
-        return expired
+                order.message = (
+                    "Didn't trigger by the close (day order)"
+                    if pending
+                    else "Didn't fill by the close (day order)"
+                )
+                changed.append(order)
+        return changed
 
     # ------------------------------------------------------------------ persistence
 
