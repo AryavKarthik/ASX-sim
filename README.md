@@ -148,7 +148,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Day 1:** repo, CI, daily 1-minute data recorder
 - [x] **Day 2:** ASX market rules: tick sizes, trading calendar, trading phases and auctions
 - [x] **Day 3:** first clickable app (currently a past-day replay viewer): chart, clock, time gate, WebSocket stream
-- [x] **Live delayed market (top priority):** watchlist of up to 20 stocks streaming Yahoo's delayed prices as they update (with a polling fallback), live candles and quotes that tick with every price, measured delay, delayed-market clock and phases, and a demo mode for outside market hours. *To verify on a live trading session: real update frequency and delay.*
+- [x] **Live delayed market (top priority):** watchlist of up to 20 stocks streaming Yahoo's delayed prices as they update (with a polling fallback), live candles and quotes that tick with every price, measured delay, delayed-market clock and phases, and a demo mode for outside market hours. *Verified live on 16 Nov 2026: updates about every second for busy stocks, a 20.0-minute delay, real bid/ask included (see ADR 0007).*
 - [x] **Trading on the live market:** order ticket (market and limit), fills at the delayed prices shown with spread, liquidity caps, partial fills and opening/closing auctions, ASX rules ($500 first parcel, price steps, no shorting), brokerage, cash, buying power, holdings, P&L, positions/orders/fills, saved account → `v0.1`
 - [ ] **Week 2:** full order types, halts, T+2, journal, analytics, more indicators
 - [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`
