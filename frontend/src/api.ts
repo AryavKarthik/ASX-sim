@@ -52,6 +52,15 @@ async function getJson<T>(url: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+export type HistoryInterval = "1d" | "1wk" | "1mo";
+
+/** Daily/weekly/monthly bars before `until` (the session day, so today comes from live candles). */
+export async function fetchHistory(symbol: string, interval: HistoryInterval, until: string | null): Promise<Bar[]> {
+  const params = new URLSearchParams({ symbol, interval });
+  if (until) params.set("until", until);
+  return (await getJson<{ bars: Bar[] }>(`/api/live/history?${params}`)).bars;
+}
+
 export async function fetchDays(): Promise<string[]> {
   return (await getJson<{ days: string[] }>("/api/replay/days")).days;
 }

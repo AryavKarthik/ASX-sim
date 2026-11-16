@@ -52,8 +52,13 @@ running 20 minutes behind.**
   closing single price auctions with the ASX's randomised timing, trading halts.
 - **Account mechanics:** cash vs settled cash (T+2), average cost, realised and unrealised
   P&L, configurable brokerage, dividends and splits.
-- **Charts:** candlesticks from 1-minute to monthly, volume, SMA/EMA, VWAP, RSI, MACD,
-  Bollinger Bands.
+- **Charts:**
+  - candlesticks and volume at 1, 5, 15 and 60 minutes (built from the session's 1-minute
+    candles), plus daily, weekly and monthly with up to decades of history,
+  - indicators you can switch on: EMA 9, SMA 20, VWAP, Bollinger Bands, and RSI and MACD in
+    their own panels. Each has a plain-English explanation on hover,
+  - long-term history stops before the session day, and weekly/monthly bars are built from
+    daily bars after that cut-off, so a demo can't see how its own day ends.
 - **Trade journal:**
   - fills are grouped into round-trip trades automatically,
   - write your plan (setup, reason, stop, target) on the order ticket and see the risk/reward
@@ -162,7 +167,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 2, part 1:** stop, stop-limit and trailing-stop orders (broker-side conditional orders), good-till-cancelled orders, T+2 settlement
 - [x] **Week 2, part 2:** trade journal (round-trip trades, plan on the ticket, review, R-multiple) and a price refresh setting (Live / 5s / 30s)
 - [x] **Week 2, part 3:** performance analytics (equity vs ASX 200, trade statistics, drawdown, Sharpe, breakdowns, discipline)
-- [ ] **Week 2, next:** chart indicators and timeframes, trading halts
+- [x] **Week 2, part 4:** chart timeframes (1m to monthly) and indicators (EMA, SMA, VWAP, Bollinger, RSI, MACD)
+- [ ] **Week 2, next:** trading halts
 - [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`
 - [ ] **Secondary:** trading inside past-day replay, daily replay over longer periods
 - [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options

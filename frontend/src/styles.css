@@ -973,3 +973,76 @@ tr.selected-row {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------- chart toolbar: timeframes and indicators ---------- */
+
+.price-chart {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 6px;
+}
+
+.price-chart .chart {
+  flex: 1;
+  min-height: 0;
+}
+
+.chart-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chart-toolbar .tf,
+.chart-toolbar .studies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chart-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.chart-toolbar button.active {
+  color: var(--text, #e6edf3);
+  border-color: #3987e5;
+  background: #3987e51f;
+}
+
+.chart-toolbar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.chart-toolbar .studies i {
+  display: inline-block;
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.chart-note {
+  margin: 0;
+}
+
+/* Indicator panels (RSI, MACD) get extra height instead of squeezing the price chart. */
+.chart-card:has(.panes-1) {
+  height: min(74vh, 740px);
+}
+
+.chart-card:has(.panes-2) {
+  height: min(86vh, 860px);
+}

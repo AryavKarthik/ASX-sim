@@ -42,7 +42,7 @@ jobs:
         run: uv run pytest --cov=asxsim --cov-report=term-missing
 
   frontend:
-    name: Frontend (types, build)
+    name: Frontend (types, tests, build)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,6 +58,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Test indicators
+        run: npm test
 
       - name: Type-check and build
         run: npm run build
