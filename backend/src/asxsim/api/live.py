@@ -33,7 +33,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSock
 
 from asxsim.api.deps import get_store
 from asxsim.coach.service import Coach, CoachError, coach_from_env
-from asxsim.data import history
+from asxsim.data import company, history
 from asxsim.data.store import LocalBarStore, NoDataError
 from asxsim.data.universe import BENCHMARKS, recording_universe, security_names
 from asxsim.journal.journal import EMOTIONS, SETUPS, Journal
@@ -155,6 +155,23 @@ async def price_history(
     except Exception as exc:  # Yahoo unavailable
         raise HTTPException(status_code=502, detail=f"Couldn't load history: {exc}") from exc
     return {"symbol": code, "interval": interval, "bars": bars}
+
+
+@router.get("/company")
+async def company_page(
+    symbol: Annotated[str, Query()],
+    until: Annotated[date | None, Query()] = None,
+) -> dict[str, Any]:
+    """What the company does, its fundamentals, and price statistics up to `until`."""
+    code = symbol.strip().upper()
+    if code not in recording_universe():
+        raise HTTPException(status_code=404, detail=f"Unknown ASX code {code}")
+    try:
+        profile = await asyncio.to_thread(company.profile, code)
+        daily = await asyncio.to_thread(history.history, code, "1d", until)
+    except Exception as exc:  # Yahoo unavailable
+        raise HTTPException(status_code=502, detail=f"Couldn't load company data: {exc}") from exc
+    return {**profile, "price": company.price_stats(daily)}
 
 
 @router.get("/defaults")

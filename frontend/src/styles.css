@@ -1197,3 +1197,114 @@ tr.selected-row {
   border-radius: 4px;
   background: #18212d;
 }
+
+/* ---------- company page ---------- */
+
+.company-card {
+  padding: 16px;
+}
+
+.company {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.company h3,
+.company h4 {
+  margin: 0;
+}
+
+.company h3 span {
+  font-size: 13px;
+  font-weight: 400;
+  margin-left: 6px;
+}
+
+.company h4 {
+  margin-top: 6px;
+  font-size: 14px;
+}
+
+.company-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.company-head p {
+  margin: 4px 0 0;
+}
+
+.company-links {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.company a,
+.company button.link {
+  color: #6aa9f0;
+}
+
+.company button.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.company-summary {
+  margin: 0;
+  line-height: 1.6;
+  max-width: 78ch;
+}
+
+.range {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.range-bar {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+  height: 6px;
+  border-radius: 3px;
+  background: #223044;
+}
+
+.range-bar i {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 14px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #3987e5;
+}
+
+.returns {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.returns th,
+.returns td {
+  padding: 6px 8px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+.returns th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
