@@ -73,6 +73,10 @@ running 20 minutes behind.**
     gross profit,
   - results by setup, by time of day and by stock, and a discipline check comparing trades
     where you followed your plan with trades where you didn't.
+- **Company pages** (the Company view): what the business does, its sector and size;
+  market cap, P/E, forward P/E, dividend yield and price to book, worked out from the price
+  on screen so they move with it; revenue, profit, margins, debt and payout ratio; the
+  52-week range and trailing returns. Every figure has a plain-English explanation on hover.
 - **AI coach (Claude)** in the Coach view ([ADR 0010](docs/adr/0010-ai-coach.md)):
   - ask anything about trading, with replies streamed as they are written. The coach sees
     your account, positions, open orders, journal and statistics, and the stock you're
@@ -179,7 +183,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 2, part 4:** chart timeframes (1m to monthly) and indicators (EMA, SMA, VWAP, Bollinger, RSI, MACD)
 - [x] **Week 2, part 5:** trading halts, inferred from the feed, with a reopening auction ([ADR 0009](docs/adr/0009-inferred-trading-halts.md))
 - [x] **Week 3, part 1:** AI coach (chat and full reviews, coach-not-tipster, monthly budget)
-- [ ] **Week 3, next:** company pages, daily replay over long periods, portfolio polish → `v1.0`
+- [x] **Week 3, part 2:** company pages (profile, fundamentals, valuation at the live price, 52-week range, returns)
+- [ ] **Week 3, next:** daily replay over long periods, portfolio polish → `v1.0`
 - [ ] **Secondary:** trading inside past-day replay
 - [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options
 

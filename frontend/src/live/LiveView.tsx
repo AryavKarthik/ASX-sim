@@ -6,6 +6,7 @@ import { PHASE_HELP, PHASE_LABELS, clockTime, formatDay, formatPrice } from "../
 import { AccountPanel } from "./AccountPanel";
 import { ActivityTabs } from "./ActivityTabs";
 import { CoachPanel } from "./CoachPanel";
+import { CompanyPanel } from "./CompanyPanel";
 import { PerformancePanel } from "./PerformancePanel";
 import { OrderTicket } from "./OrderTicket";
 import type { Defaults, FeedSource, JournalEntry, LiveStatus, OrderCommand } from "./types";
@@ -93,7 +94,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
   const [selected, setSelected] = useState(symbols[0]);
   const [source, setSource] = useState<FeedSource>({ kind: "live" });
   const [refreshMs, setRefreshMs] = useState<number>(loadRefresh);
-  const [view, setView] = useState<"chart" | "performance" | "coach">("chart");
+  const [view, setView] = useState<"chart" | "company" | "performance" | "coach">("chart");
 
   function chooseRefresh(ms: number) {
     setRefreshMs(ms);
@@ -231,6 +232,9 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
           <button className={view === "chart" ? "active" : ""} onClick={() => setView("chart")}>
             Chart
           </button>
+          <button className={view === "company" ? "active" : ""} onClick={() => setView("company")}>
+            Company
+          </button>
           <button className={view === "performance" ? "active" : ""} onClick={() => setView("performance")}>
             Performance
           </button>
@@ -243,6 +247,12 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
         <section className="card coach-card" style={view === "coach" ? undefined : { display: "none" }}>
           <CoachPanel status={defaults.coach} symbol={selected} ask={askCoach} />
         </section>
+
+        {view === "company" && (
+          <section className="card company-card">
+            <CompanyPanel symbol={selected} sessionDay={sessionDay} price={shown.price} demo={source.kind === "demo"} />
+          </section>
+        )}
 
         {view === "performance" && (
           <section className="card performance-card">
