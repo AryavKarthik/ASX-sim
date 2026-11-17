@@ -32,7 +32,7 @@ from asxsim.market.calendar import SYDNEY
 TICK_SECONDS = 0.25  # how often a playing replay pushes updates to the browser
 MAX_SESSIONS = 20
 
-app = FastAPI(title="ASX-sim API", version="0.1.0")
+app = FastAPI(title="ASX-sim API", version="1.0.0")
 app.include_router(live_router)
 app.include_router(swing_router)
 
