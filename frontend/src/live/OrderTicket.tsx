@@ -27,6 +27,9 @@ type Props = {
   halted: boolean;
   journalOptions: JournalOptions;
   onSubmit: (order: OrderCommand) => Promise<CommandResult>;
+  initialSide?: "buy" | "sell";
+  /** Inside a panel that already shows the stock: no header or card border. */
+  compact?: boolean;
 };
 
 function money(value: number): string {
@@ -67,10 +70,10 @@ function num(text: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, halted, journalOptions, onSubmit }: Props) {
+export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, halted, journalOptions, onSubmit, initialSide = "buy", compact = false }: Props) {
   const [planOpen, setPlanOpen] = useState(false);
   const [plan, setPlan] = useState<TradePlan>({});
-  const [side, setSide] = useState<"buy" | "sell">("buy");
+  const [side, setSide] = useState<"buy" | "sell">(initialSide);
   const [kind, setKind] = useState<OrderKind>("market");
   const [quantity, setQuantity] = useState("");
   const [limit, setLimit] = useState("");
@@ -264,8 +267,8 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, ha
         : "Est. trigger price";
 
   return (
-    <form className="ticket card" onSubmit={submit}>
-      <div className="ticket-head">
+    <form className={`ticket ${compact ? "compact" : "card"}`} onSubmit={submit}>
+      <div className="ticket-head" hidden={compact}>
         <strong>Trade {symbol}</strong>
         <span className="muted small-inline">{name}</span>
       </div>

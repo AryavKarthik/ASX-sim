@@ -3,7 +3,8 @@ import { useState } from "react";
 import { JournalPanel } from "./JournalPanel";
 import type { AccountView, CommandResult, JournalEntry, JournalOptions, OrderCommand, OrderView } from "./types";
 
-type Tab = "positions" | "orders" | "fills" | "journal";
+export type ActivityTab = "positions" | "orders" | "fills" | "journal";
+type Tab = ActivityTab;
 
 function marketTime(iso: string): string {
   return new Date(iso).toLocaleTimeString("en-AU", { timeZone: "Australia/Sydney", hour12: false });
@@ -66,11 +67,16 @@ type Props = {
   onOrder: (order: OrderCommand) => Promise<CommandResult>;
   journalOptions: JournalOptions;
   onJournalSave: (tradeId: string, fields: Partial<JournalEntry>) => Promise<CommandResult>;
+  /** Show one tab, chosen by the page (hides the built-in tab row). */
+  tab?: ActivityTab;
+  onTrade?: (symbol: string, side: "buy" | "sell") => void;
+  names?: Record<string, string>;
 };
 
 /** Positions, orders, fills and the trade journal, below the chart. */
-export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOptions, onJournalSave }: Props) {
-  const [tab, setTab] = useState<Tab>("positions");
+export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOptions, onJournalSave, tab: fixedTab, onTrade, names = {} }: Props) {
+  const [chosen, setTab] = useState<Tab>("positions");
+  const tab = fixedTab ?? chosen;
   const [error, setError] = useState<string | null>(null);
   const positions = account?.positions ?? [];
   const orders = account?.orders ?? [];
@@ -83,8 +89,8 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOpti
   }
 
   return (
-    <section className="activity card">
-      <div className="tabs-row" role="tablist">
+    <section className={`activity ${fixedTab ? "embedded" : "card"}`}>
+      <div className="tabs-row" role="tablist" hidden={fixedTab != null}>
         <button className={tab === "positions" ? "active" : ""} onClick={() => setTab("positions")}>
           Positions ({positions.length})
         </button>
@@ -111,33 +117,49 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOpti
         )}
         {tab === "positions" &&
           (positions.length === 0 ? (
-            <p className="muted empty">No holdings yet. Buy something from the ticket on the right.</p>
+            <p className="muted empty">No holdings yet. Open a stock from your watchlist or the search bar, then press Buy.</p>
           ) : (
             <table>
               <thead>
                 <tr>
                   <th>Stock</th>
-                  <th>Qty</th>
-                  <th>Avg cost</th>
-                  <th>Last</th>
-                  <th>Value</th>
-                  <th>Unrealised</th>
+                  <th className="num">Shares</th>
+                  <th className="num">Avg cost</th>
+                  <th className="num">Last</th>
+                  <th className="num">Market value</th>
+                  <th className="num">Unrealised P&amp;L</th>
+                  <th className="num">Realised P&amp;L</th>
                   <th />
                 </tr>
               </thead>
               <tbody>
                 {positions.map((p) => (
                   <tr key={p.symbol} onClick={() => onSelect(p.symbol)} className="clickable">
-                    <td className="strong">{p.symbol}</td>
-                    <td>{p.quantity.toLocaleString("en-AU")}</td>
-                    <td>${p.average_price}</td>
-                    <td>{p.last_price ? `$${p.last_price}` : "—"}</td>
-                    <td>{money(p.market_value)}</td>
-                    <td className={tone(p.unrealised)}>
-                      {money(p.unrealised, true)}
-                      {p.unrealised_pct != null ? ` (${p.unrealised_pct.toFixed(2)}%)` : ""}
-                    </td>
                     <td>
+                      <span className="cell-symbol">{p.symbol}</span>
+                      <span className="cell-name">{names[p.symbol] ?? ""}</span>
+                    </td>
+                    <td className="num">{p.quantity.toLocaleString("en-AU")}</td>
+                    <td className="num">${p.average_price}</td>
+                    <td className="num">{p.last_price ? `$${p.last_price}` : "—"}</td>
+                    <td className="num">{money(p.market_value)}</td>
+                    <td className={`num ${tone(p.unrealised)}`}>
+                      {money(p.unrealised, true)}
+                      {p.unrealised_pct != null && <span className="cell-sub">{p.unrealised_pct >= 0 ? "+" : ""}{p.unrealised_pct.toFixed(2)}%</span>}
+                    </td>
+                    <td className={`num ${tone(p.realised)}`}>{money(p.realised, true)}</td>
+                    <td className="row-actions">
+                      {onTrade && (
+                        <button
+                          className="small-button trade-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onTrade(p.symbol, "buy");
+                          }}
+                        >
+                          Trade
+                        </button>
+                      )}
                       <button
                         className="small-button"
                         onClick={(e) => {
