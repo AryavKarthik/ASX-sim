@@ -60,6 +60,7 @@ class OrderStatus(StrEnum):
 class Auction(StrEnum):
     OPEN = "open"
     CLOSE = "close"
+    RESUME = "resume"  # the reopening auction after a trading halt
 
 
 @dataclass(frozen=True, slots=True)

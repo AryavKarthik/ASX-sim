@@ -8,6 +8,7 @@ adapts if the real delay isn't exactly 20 minutes.
 
 from __future__ import annotations
 
+import math
 import statistics
 from collections import deque
 from dataclasses import dataclass, field, replace
@@ -24,6 +25,29 @@ DELAY_SAMPLES = 50
 # be days old. Anything older than this is a snapshot of the last close, not a live trade:
 # it updates the quote but doesn't count toward the delay or mean prices are streaming.
 MAX_LIVE_LAG = timedelta(hours=1)
+# Trading halts aren't published in the feed, so they are inferred: a stock goes silent for
+# far longer than its own trading rhythm makes plausible, while other stocks keep trading in
+# continuous trading (ADR 0009).
+HALT_QUIET = timedelta(minutes=15)  # never flag a gap shorter than this
+HALT_MIN_CANDLES = 15  # needs this much of today's history to know the stock's rhythm
+HALT_MIN_ACTIVITY = 0.3  # stocks trading in fewer minutes than this are too thin to judge
+HALT_CHANCE = 1e-8  # flag a gap only if chance alone would produce it less often than this
+
+
+def quiet_needed(activity: float) -> timedelta:
+    """How long a silence must last before it looks like a halt rather than a lull.
+
+    `activity` is the share of minutes the stock has traded in today. If it trades in a
+    minute with probability p, n silent minutes in a row happen by chance with probability
+    (1 - p)^n; the gap must be long enough to push that below HALT_CHANCE. A stock trading
+    in 90% of minutes only needs the 15-minute minimum; one trading half the time needs 27.
+    """
+    if activity < HALT_MIN_ACTIVITY:
+        return timedelta.max
+    if activity >= 1:
+        return HALT_QUIET
+    minutes = math.log(HALT_CHANCE) / math.log(1 - activity)
+    return max(HALT_QUIET, timedelta(minutes=minutes))
 
 
 @dataclass
@@ -138,6 +162,41 @@ class LiveMarket:
             day_low=tick.day_low or min(c.low for c in session),
         )
 
+    def halted(self) -> set[str]:
+        """Symbols that look halted right now (see HALT_QUIET).
+
+        "Now" is the most recent trade in any watched symbol, not the wall clock, so a feed
+        outage (nothing trading anywhere) never looks like a halt, and demos replayed at
+        any speed behave the same.
+        """
+        times = [s.quote.time for s in self._states.values() if s.quote is not None]
+        if not times:
+            return set()
+        latest = max(times)
+        local = latest.astimezone(SYDNEY)
+        if self._schedule(local.date()).phase_at(local) is not MarketPhase.OPEN:
+            return set()
+        halted = set()
+        for symbol, state in self._states.items():
+            if state.quote is None or latest - state.quote.time < HALT_QUIET:
+                continue
+            today = [
+                c for c in state.candles.candles if c.time.astimezone(SYDNEY).date() == local.date()
+            ]
+            if len(today) < HALT_MIN_CANDLES:
+                continue
+            span = (today[-1].time - today[0].time).total_seconds() / 60 + 1
+            if latest - state.quote.time >= quiet_needed(len(today) / span):
+                halted.add(symbol)
+        return halted
+
+    def _schedule(self, day: date) -> DaySchedule:
+        schedule = self._schedules.get(day)
+        if schedule is None:
+            schedule = day_schedule(day, calendar=self._calendar)
+            self._schedules[day] = schedule
+        return schedule
+
     @property
     def measured_delay(self) -> timedelta | None:
         """Median lag between a trade happening and us receiving it (None until measured)."""
@@ -151,8 +210,4 @@ class LiveMarket:
 
     def phase_at(self, now: datetime) -> MarketPhase:
         market = self.market_now(now).astimezone(SYDNEY)
-        schedule = self._schedules.get(market.date())
-        if schedule is None:
-            schedule = day_schedule(market.date(), calendar=self._calendar)
-            self._schedules[market.date()] = schedule
-        return schedule.phase_at(market)
+        return self._schedule(market.date()).phase_at(market)

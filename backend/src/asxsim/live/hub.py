@@ -21,7 +21,7 @@ from typing import Any
 import pandas as pd
 
 from asxsim.analytics.performance import performance
-from asxsim.data.universe import recording_universe
+from asxsim.data.universe import BENCHMARKS, recording_universe
 from asxsim.journal.journal import Journal, JournalEntry, JournalError, parse_entry, r_multiple
 from asxsim.journal.trades import build_trades
 from asxsim.live.candles import candles_from_bars, sydney_epoch
@@ -320,11 +320,17 @@ class LiveHub:
             "seconds_since_tick": None
             if self.last_tick_at is None
             else round((now - self.last_tick_at).total_seconds(), 1),
+            "halted": sorted(self.engine.halted),
             "error": self.error,
         }
 
+    def refresh_halts(self) -> None:
+        """Tell the engine which stocks look halted (an index can't be halted or traded)."""
+        self.engine.halted = self.market.halted() - set(BENCHMARKS)
+
     async def _status_loop(self) -> None:
         while True:
+            self.refresh_halts()
             expired = self.engine.expire(self.market.market_now(self._clock()))
             if expired:
                 self.save()

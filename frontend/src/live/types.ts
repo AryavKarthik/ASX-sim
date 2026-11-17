@@ -26,6 +26,7 @@ export type LiveStatus = {
   market_time: string; // ISO, Sydney time
   phase: Phase;
   seconds_since_tick: number | null;
+  halted: string[]; // stocks that look halted (inferred from a gap in trading)
   error: string | null;
 };
 
@@ -47,7 +48,7 @@ export type OrderView = {
   created_at: string;
   session: string;
   status: "pending" | "queued" | "working" | "filled" | "cancelled" | "expired" | "rejected";
-  auction: "open" | "close" | null;
+  auction: "open" | "close" | "resume" | null;
   filled: number;
   average_price: string | null;
   fees: string;
