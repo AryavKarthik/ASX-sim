@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import date, datetime, time
 from pathlib import Path
 
@@ -48,3 +49,16 @@ def day_bars(day: date = TRADING_DAY, symbols: tuple[str, ...] = ("BHP", "CBA"))
 def bar_store(tmp_path: Path) -> LocalBarStore:
     write_daily(day_bars(), tmp_path)
     return LocalBarStore(tmp_path)
+
+
+@pytest.fixture(autouse=True)
+def coach_switched_off() -> Iterator[None]:
+    """Tests never read the real .env or call the real API: the coach is off unless a test
+    installs a fake one."""
+    from asxsim.api import live
+    from asxsim.api.app import app
+    from asxsim.coach.service import Coach
+
+    app.dependency_overrides[live.get_coach] = lambda: Coach(None)
+    yield
+    app.dependency_overrides.pop(live.get_coach, None)

@@ -33,3 +33,22 @@ def state_dir() -> Path:
     """
     configured = os.environ.get("ASXSIM_STATE_DIR")
     return Path(configured).expanduser().resolve() if configured else Path.home() / ".asxsim"
+
+
+def load_env(path: Path | None = None) -> None:
+    """Read `KEY=value` lines from the repository's `.env` into the environment.
+
+    Variables already set in the real environment win, so a key exported in your shell
+    overrides the file. Blank values are skipped. The file's contents are never logged.
+    """
+    env_file = path or REPO_ROOT / ".env"
+    if not env_file.is_file():
+        return
+    for raw in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        value = value.strip().strip("'\"")
+        if key.strip() and value:
+            os.environ.setdefault(key.strip(), value)

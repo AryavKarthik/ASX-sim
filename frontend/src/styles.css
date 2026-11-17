@@ -1065,3 +1065,135 @@ tr.selected-row {
   margin-left: 6px;
   vertical-align: middle;
 }
+
+/* ---------- AI coach ---------- */
+
+.coach-card {
+  padding: 14px;
+}
+
+.coach {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: min(62vh, 620px);
+}
+
+.coach-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.review-button {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1px solid #3987e5;
+  border-radius: 6px;
+  background: #3987e51f;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.coach-log {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #0f151d;
+}
+
+.turn {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: #18212d;
+}
+
+.turn.user {
+  align-self: flex-end;
+  background: #1b3252;
+}
+
+.turn.error {
+  background: #3a1719;
+  color: #ff8a80;
+}
+
+.turn .who {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.turn p {
+  margin: 2px 0 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.starters {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.starters button {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: left;
+}
+
+.coach-input {
+  display: flex;
+  gap: 8px;
+}
+
+.coach-input input {
+  flex: 1;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #0f151d;
+  color: var(--text);
+}
+
+.coach-input button {
+  padding: 0 18px;
+  border: 0;
+  border-radius: 6px;
+  background: #3987e5;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.coach button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.coach-spend {
+  margin: 0;
+}
+
+.coach-setup {
+  max-width: 620px;
+  line-height: 1.6;
+}
+
+.coach-setup code {
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: #18212d;
+}

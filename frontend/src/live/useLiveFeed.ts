@@ -25,7 +25,11 @@ export type LiveFeed = {
   candlesFor: (symbol: string) => Bar[];
   closedReason: string | null;
   /** Send a command (order, cancel, reset_account) and wait for the server's reply. */
-  command: (action: string, payload: Record<string, unknown>) => Promise<CommandResult>;
+  command: (
+    action: string,
+    payload: Record<string, unknown>,
+    onDelta?: (text: string) => void, // streamed text for commands that reply gradually (the coach)
+  ) => Promise<CommandResult>;
 };
 
 /**
@@ -50,6 +54,7 @@ export function useLiveFeed(
   const candles = useRef(new Map<string, Bar[]>());
   const socket = useRef<WebSocket | null>(null);
   const pending = useRef(new Map<string, (r: CommandResult) => void>());
+  const streams = useRef(new Map<string, (text: string) => void>());
   const nextId = useRef(1);
   const callbacks = useRef({ onCandle, onSnapshot });
   const symbolsRef = useRef(symbols);
@@ -120,6 +125,7 @@ export function useLiveFeed(
         resolve({ type: "result", request_id: "", action: "", ok: false, error: "Disconnected from the server" });
       }
       pending.current.clear();
+      streams.current.clear();
     };
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data as string) as LiveMessage;
@@ -151,9 +157,13 @@ export function useLiveFeed(
         case "account":
           setAccount(message.account);
           break;
+        case "coach":
+          streams.current.get(message.request_id)?.(message.delta);
+          break;
         case "result": {
           const resolve = pending.current.get(message.request_id);
           pending.current.delete(message.request_id);
+          streams.current.delete(message.request_id);
           resolve?.(message);
           break;
         }
@@ -179,7 +189,7 @@ export function useLiveFeed(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [symbolsKey]);
 
-  const command = useCallback((action: string, payload: Record<string, unknown>) => {
+  const command = useCallback((action: string, payload: Record<string, unknown>, onDelta?: (text: string) => void) => {
     return new Promise<CommandResult>((resolve) => {
       const ws = socket.current;
       if (ws?.readyState !== WebSocket.OPEN) {
@@ -188,6 +198,7 @@ export function useLiveFeed(
       }
       const requestId = `r${nextId.current++}`;
       pending.current.set(requestId, resolve);
+      if (onDelta) streams.current.set(requestId, onDelta);
       ws.send(JSON.stringify({ action, request_id: requestId, ...payload }));
     });
   }, []);

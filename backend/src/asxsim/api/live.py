@@ -32,6 +32,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, WebSocket, WebSocketDisconnect
 
 from asxsim.api.deps import get_store
+from asxsim.coach.service import Coach, CoachError, coach_from_env
 from asxsim.data import history
 from asxsim.data.store import LocalBarStore, NoDataError
 from asxsim.data.universe import BENCHMARKS, recording_universe, security_names
@@ -106,6 +107,39 @@ def demo_hub(store: LocalBarStore, day: date | None, speed: float) -> LiveHub:
     )
 
 
+@cache
+def get_coach() -> Coach:
+    """The AI coach for this server process (overridden in tests)."""
+    return coach_from_env()
+
+
+async def run_coach(hub: LiveHub, coach: Coach, client: Any, message: dict[str, Any]) -> None:
+    """Answer one coach request, streaming the reply to the browser as it is written."""
+    reply: dict[str, Any] = {
+        "type": "result",
+        "request_id": message.get("request_id"),
+        "action": "coach",
+    }
+    try:
+        symbol = message.get("symbol")
+        request = coach.build(
+            message.get("kind", "chat"),
+            message.get("question"),
+            message.get("history"),
+            hub.coach_context(symbol if isinstance(symbol, str) else None),
+        )
+        async for text in coach.reply(request):
+            client.queue.put_nowait(
+                {"type": "coach", "request_id": message.get("request_id"), "delta": text}
+            )
+    except CoachError as exc:
+        reply.update(ok=False, error=str(exc))
+    else:
+        reply["ok"] = True
+    reply["coach"] = coach.status()
+    client.queue.put_nowait(reply)
+
+
 @router.get("/history")
 async def price_history(
     symbol: Annotated[str, Query()],
@@ -124,7 +158,7 @@ async def price_history(
 
 
 @router.get("/defaults")
-def defaults() -> dict[str, Any]:
+def defaults(coach: Annotated[Coach, Depends(get_coach)]) -> dict[str, Any]:
     """The default watchlist and every symbol that can be watched."""
     names = security_names()
     universe = sorted(recording_universe(), key=lambda c: (c in BENCHMARKS, c))
@@ -132,6 +166,7 @@ def defaults() -> dict[str, Any]:
         "watchlist": DEFAULT_WATCHLIST,
         "max_symbols": MAX_SYMBOLS,
         "journal": {"setups": SETUPS, "emotions": EMOTIONS},
+        "coach": coach.status(),
         "universe": [{"code": c, "name": names.get(c, c)} for c in universe],
     }
 
@@ -176,6 +211,7 @@ async def live_stream(
     websocket: WebSocket,
     store: Annotated[LocalBarStore, Depends(get_store)],
     live_hub: Annotated[LiveHub, Depends(get_live_hub)],
+    coach: Annotated[Coach, Depends(get_coach)],
     symbols: Annotated[str, Query()] = ",".join(DEFAULT_WATCHLIST),
     source: Annotated[str, Query(pattern="^(live|demo)$")] = "live",
     day: Annotated[date | None, Query()] = None,
@@ -204,6 +240,7 @@ async def live_stream(
             await websocket.send_json(await client.queue.get())
 
     sender = asyncio.create_task(send_all())
+    coaching: asyncio.Task[None] | None = None  # one coach reply at a time
     try:
         with contextlib.suppress(WebSocketDisconnect):
             while True:
@@ -215,10 +252,26 @@ async def live_stream(
                     if wanted:
                         await hub.watch(client, wanted)
                     continue
+                if message.get("action") == "coach":
+                    if coaching is not None and not coaching.done():
+                        client.queue.put_nowait(
+                            {
+                                "type": "result",
+                                "request_id": message.get("request_id"),
+                                "action": "coach",
+                                "ok": False,
+                                "error": "The coach is still answering your last question",
+                            }
+                        )
+                    else:
+                        coaching = asyncio.create_task(run_coach(hub, coach, client, message))
+                    continue
                 reply = handle_command(hub, message)
                 if reply is not None:
                     client.queue.put_nowait(reply)
     finally:
+        if coaching is not None:
+            coaching.cancel()
         sender.cancel()
         hub.disconnect(client)
         if owns_hub:
