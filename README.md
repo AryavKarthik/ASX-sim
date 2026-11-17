@@ -24,14 +24,13 @@ mode lets you trade through months of daily prices in an evening.
 > is done. It is a personal learning tool: simulated money only, and nothing here is
 > financial advice.
 
-![The trading screen: watchlist, live chart with indicators, order ticket and account](docs/images/trading.jpg)
+![Home: the ASX 200, your account, today's movers and your watchlist with trend lines](docs/images/home.jpg)
 
-| Performance view | AI coach |
+| A stock's chart and order ticket | Portfolio: positions, P&L and allocation |
 |---|---|
-| ![Statistics, equity curve against the ASX 200, and breakdowns](docs/images/performance.jpg) | ![The coach chat](docs/images/coach.jpg) |
+| ![A stock page's 1-minute chart with VWAP, and the order ticket](docs/images/stock.png) | ![Portfolio summary, positions table with Trade buttons, and allocation](docs/images/portfolio.png) |
 
-*Screenshots use invented sample prices (see [Market data and licensing](#market-data-and-licensing)),
-and the coach reply shown is the built-in practice reply, not an AI answer.*
+*Screenshots use invented sample prices in demo mode (see [Market data and licensing](#market-data-and-licensing)).*
 
 ---
 
@@ -50,6 +49,12 @@ running 20 minutes behind.**
   Brokers) removes the delay without changing the rest of the app.
 
 ## Features
+
+**A clear, page-based interface**, in the spirit of beginner-friendly broker redesigns:
+- a sidebar with **Home**, **Watchlist**, **Portfolio**, **Coach**, **Practice** and **Replay**, a stock search in the top bar, and the market's phase, delayed clock and your equity always visible,
+- **a page for every stock** (`#/stock/BHP`): price and change, its trends (today, 1 week to 3 years, 52-week range), key statistics, a large chart, the order ticket, company details and your activity in it,
+- **Portfolio**: equity, total, unrealised and realised P&L, cash and buying power, a positions table with a Trade button on every row, orders, history, journal, performance and allocation,
+- a **Trade** panel that slides in from any watchlist or portfolio row, and an info tip on every piece of jargon.
 
 **Core: live day trading on delayed data**
 - A streaming feed of delayed prices, updated on every new price (not once a minute),
@@ -259,6 +264,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 3, part 3:** swing practice on daily bars (next-day fills, gaps, blind mode, vs buy and hold)
 - [x] **Week 3, part 4:** portfolio polish: sample-data generator, screenshots, architecture and docs → `v1.0`
 - [x] **After v1.0:** drawing tools on charts (horizontal lines, trend lines, rays)
+- [x] **After v1.0:** redesigned interface: sidebar pages, a page per stock with its trends, a Portfolio page, a slide-in trade panel, full-width layout
 - [ ] **Secondary:** trading inside past-day replay
 - [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits, ASX options, a refreshed ASX 200 list (a few codes have changed since it was compiled)
 

@@ -25,30 +25,38 @@ function Stat({ label, value, help, sub }: { label: string; value: string; help:
 const pct = (n: number | null, digits = 1) => (n == null ? "—" : `${n.toFixed(digits)}%`);
 const times = (n: number | null) => (n == null ? "—" : `${n.toFixed(1)}×`);
 
-/** What the company is, what it earns, and how its price has moved. */
-export function CompanyPanel({ symbol, sessionDay, price, demo }: Props) {
-  const [data, setData] = useState<Company | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
+export type CompanyState = { data: Company | null; error: string | null };
 
+/** Company profile, fundamentals and price statistics, up to the session day. */
+export function useCompany(symbol: string | null, sessionDay: string | null): CompanyState {
+  const [state, setState] = useState<CompanyState>({ data: null, error: null });
   useEffect(() => {
+    if (!symbol) return;
     let current = true;
-    setData(null);
-    setError(null);
-    setExpanded(false);
+    setState({ data: null, error: null });
     const params = new URLSearchParams({ symbol });
     if (sessionDay) params.set("until", sessionDay);
     fetch(`/api/live/company?${params}`)
       .then(async (response) => {
         const body = (await response.json()) as Company & { detail?: string };
         if (!response.ok) throw new Error(body.detail ?? response.statusText);
-        if (current) setData(body);
+        if (current) setState({ data: body, error: null });
       })
-      .catch((e: Error) => current && setError(e.message));
+      .catch((e: Error) => current && setState({ data: null, error: e.message }));
     return () => {
       current = false;
     };
   }, [symbol, sessionDay]);
+  return state;
+}
+
+/** What the company is, what it earns, and how its price has moved. */
+export function CompanyPanel({ symbol, sessionDay, price, demo, company, showPrice = true }: Props & { company?: CompanyState; showPrice?: boolean }) {
+  const own = useCompany(company ? null : symbol, sessionDay);
+  const { data, error } = company ?? own;
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => setExpanded(false), [symbol]);
 
   if (error) return <p className="error">Couldn't load company information: {error}</p>;
   if (!data) return <p className="muted">Loading {symbol}…</p>;
@@ -124,6 +132,8 @@ export function CompanyPanel({ symbol, sessionDay, price, demo }: Props) {
         </>
       )}
 
+      {showPrice && (
+      <>
       <h4>Price history {p.as_of && <span className="muted small-text">to the close on {p.as_of}</span>}</h4>
       {p.week52_low != null && p.week52_high != null && (
         <div className="range" title="Where the current price sits between the lowest and highest prices of the past 52 weeks">
@@ -153,10 +163,12 @@ export function CompanyPanel({ symbol, sessionDay, price, demo }: Props) {
           </tr>
         </tbody>
       </table>
+      </>
+      )}
 
       <p className="muted tiny">
         Company figures are from Yahoo Finance and are the latest reported, so they can lag announcements. Price changes
-        exclude dividends. Use the D, W and M buttons on the Chart view for the long-term chart.
+        exclude dividends. Use the D, W and M chart buttons for the long-term chart.
         {demo && " In a demo, the price history stops before the demo day, but company figures are today's latest."}
       </p>
     </div>

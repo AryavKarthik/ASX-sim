@@ -227,6 +227,9 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       grid: { vertLines: { color: "#1c2430" }, horzLines: { color: "#1c2430" } },
       rightPriceScale: { borderColor: "#2a3441" },
       timeScale: { borderColor: "#2a3441", timeVisible: true, secondsVisible: false },
+      // On a page that scrolls, the wheel should move the page, not hijack the chart.
+      handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+      handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
     });
     const candles = chart.addSeries(CandlestickSeries, {
       upColor: UP,
@@ -252,8 +255,25 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       setDrawState,
     );
     drawingRef.current = controller;
+    // Ctrl + wheel (a trackpad pinch also sends this) zooms around the pointer.
+    const zoom = (event: WheelEvent) => {
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      const timeScale = chart.timeScale();
+      const range = timeScale.getVisibleLogicalRange();
+      if (!range) return;
+      const box = container.current!.getBoundingClientRect();
+      const anchor = timeScale.coordinateToLogical(event.clientX - box.left) ?? (range.from + range.to) / 2;
+      const factor = Math.exp(event.deltaY * 0.0025);
+      const from = anchor - (anchor - range.from) * factor;
+      const to = anchor + (range.to - anchor) * factor;
+      if (to - from < 5) return; // don't zoom in past a handful of bars
+      timeScale.setVisibleLogicalRange({ from, to });
+    };
+    container.current!.addEventListener("wheel", zoom, { passive: false });
     setDrawing(controller);
     return () => {
+      container.current?.removeEventListener("wheel", zoom);
       controller.destroy();
       drawingRef.current = null;
       chart.remove();

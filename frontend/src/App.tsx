@@ -1,16 +1,17 @@
 import { useEffect, useState } from "react";
 
-import { ReplayView } from "./components/ReplayView";
-import { SetupPanel, type StartedSession } from "./components/SetupPanel";
-import { LiveView } from "./live/LiveView";
+import { MarketProvider } from "./app/market";
+import { useRoute } from "./app/router";
+import { Shell } from "./app/Shell";
 import type { Defaults } from "./live/types";
+import { HomePage } from "./pages/HomePage";
+import { CoachPage, ReplayPage } from "./pages/OtherPages";
+import { PortfolioPage } from "./pages/PortfolioPage";
+import { StockPage } from "./pages/StockPage";
+import { WatchlistPage } from "./pages/WatchlistPage";
 import { SwingView } from "./swing/SwingView";
 
-type Mode = "live" | "swing" | "replay";
-
 export function App() {
-  const [mode, setMode] = useState<Mode>("live");
-  const [session, setSession] = useState<StartedSession | null>(null);
   const [defaults, setDefaults] = useState<Defaults | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -18,40 +19,40 @@ export function App() {
     fetch("/api/live/defaults")
       .then((r) => (r.ok ? (r.json() as Promise<Defaults>) : Promise.reject(new Error(r.statusText))))
       .then(setDefaults)
-      .catch((e: Error) => setError(`Can't reach the backend: ${e.message}`));
+      .catch((e: Error) => setError(e.message));
   }, []);
 
-  return (
-    <div className="app">
-      <nav className="topbar">
-        <span className="brand">
+  if (error) {
+    return (
+      <div className="boot-message">
+        <h1>
           ASX<span>-sim</span>
-        </span>
-        <div className="tabs" role="tablist">
-          <button role="tab" aria-selected={mode === "live"} className={mode === "live" ? "active" : ""} onClick={() => setMode("live")}>
-            Live market (delayed)
-          </button>
-          <button role="tab" aria-selected={mode === "swing"} className={mode === "swing" ? "active" : ""} onClick={() => setMode("swing")}>
-            Swing practice
-          </button>
-          <button role="tab" aria-selected={mode === "replay"} className={mode === "replay" ? "active" : ""} onClick={() => setMode("replay")}>
-            Past-day replay
-          </button>
-        </div>
-        <span className="muted small">Simulated trading for practice · prices ~20 min delayed</span>
-      </nav>
-      <main>
-        {error && <p className="error">{error}</p>}
-        {mode === "live" ? (
-          defaults && <LiveView defaults={defaults} />
-        ) : mode === "swing" ? (
-          <SwingView />
-        ) : session ? (
-          <ReplayView key={session.id} sessionId={session.id} onExit={() => setSession(null)} />
-        ) : (
-          <SetupPanel onStart={setSession} />
-        )}
-      </main>
-    </div>
+        </h1>
+        <p className="error">Can't reach the backend: {error}</p>
+        <p className="muted">Start it with scripts\dev.ps1 (or `uv run uvicorn asxsim.api.app:app` in backend/), then refresh.</p>
+      </div>
+    );
+  }
+  if (!defaults) return <div className="boot-message muted">Loading…</div>;
+
+  return (
+    <MarketProvider defaults={defaults}>
+      <Routed />
+    </MarketProvider>
+  );
+}
+
+function Routed() {
+  const route = useRoute();
+  return (
+    <Shell page={route.page}>
+      {route.page === "home" && <HomePage />}
+      {route.page === "watchlist" && <WatchlistPage />}
+      {route.page === "stock" && route.symbol && <StockPage symbol={route.symbol} />}
+      {route.page === "portfolio" && <PortfolioPage tab={route.tab} />}
+      {route.page === "coach" && <CoachPage />}
+      {route.page === "swing" && <SwingView />}
+      {route.page === "replay" && <ReplayPage />}
+    </Shell>
   );
 }

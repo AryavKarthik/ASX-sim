@@ -1,10 +1,14 @@
 :root {
-  --bg: #0b1017;
-  --panel: #121923;
-  --border: #222c39;
-  --text: #e6ebf2;
-  --muted: #8b96a5;
+  --bg: #090c11;
+  --panel: #10151c;
+  --panel-2: #161c25;
+  --border: #1c2330;
+  --border-strong: #2a3443;
+  --text: #e8edf3;
+  --muted: #8691a1;
   --accent: #3b82f6;
+  --accent-soft: rgba(59, 130, 246, 0.14);
+  --radius: 14px;
   --up: #26a69a;
   --down: #ef5350;
   --warn: #f5a524;
@@ -30,10 +34,7 @@ body {
 
 main {
   flex: 1;
-  padding: 16px;
-  max-width: 1400px;
   width: 100%;
-  margin: 0 auto;
 }
 
 .topbar {
