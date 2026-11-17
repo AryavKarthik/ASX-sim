@@ -99,6 +99,23 @@ def group(bars: list[Bar], interval: str) -> list[Bar]:
     return out
 
 
+def all_daily(
+    code: str,
+    until: date | None = None,
+    fetch: HistoryFetcher | None = None,
+    now: Callable[[], float] = time.monotonic,
+) -> list[Bar]:
+    """Every daily bar Yahoo has for an ASX code, oldest first, before `until` if given."""
+    cached = _cache.get(code)
+    if cached is None or now() - cached[0] > CACHE_SECONDS:
+        cached = (now(), to_bars((fetch or yahoo_daily)(yahoo_symbol(code))))
+        _cache[code] = cached
+    daily = cached[1]
+    if until is not None:
+        daily = [b for b in daily if b["date"] < until.isoformat()]
+    return daily
+
+
 def history(
     code: str,
     interval: str,
@@ -112,13 +129,7 @@ def history(
     """
     if interval not in INTERVALS:
         raise ValueError(f"Interval must be one of {', '.join(INTERVALS)}")
-    cached = _cache.get(code)
-    if cached is None or now() - cached[0] > CACHE_SECONDS:
-        cached = (now(), to_bars((fetch or yahoo_daily)(yahoo_symbol(code))))
-        _cache[code] = cached
-    daily = cached[1]
-    if until is not None:
-        daily = [b for b in daily if b["date"] < until.isoformat()]
+    daily = all_daily(code, until, fetch, now)
     lookback = LOOKBACK_DAYS[interval]
     if lookback is not None and daily:
         start = (date.fromisoformat(daily[-1]["date"]) - timedelta(days=lookback)).isoformat()
