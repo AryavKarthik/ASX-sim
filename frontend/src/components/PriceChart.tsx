@@ -12,6 +12,9 @@ import {
 import { type Ref, useEffect, useImperativeHandle, useRef, useState } from "react";
 
 import { type Bar, type HistoryInterval, fetchHistory } from "../api";
+import { DrawingController, type DrawingState } from "../drawing/controller";
+import { DrawingToolbar } from "../drawing/DrawingToolbar";
+import { logicalToTime, timeToLogical } from "../drawing/geometry";
 import {
   type Series as Values,
   aggregate,
@@ -136,6 +139,7 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
   const intraday = useRef<Bar[]>([]);
   const history = useRef<Bar[] | null>(null); // long-timeframe bars before today; null = loading
   const lastCount = useRef(0);
+  const drawingRef = useRef<DrawingController | null>(null);
 
   const [timeframe, setTimeframe] = useState<Timeframe>(() =>
     load(TF_KEY, "1m", (v) => TIMEFRAMES.some((t) => t.key === v)),
@@ -144,6 +148,10 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
     load(IND_KEY, ["vwap"], (v) => Array.isArray(v) && v.every((k) => INDICATORS.some((i) => i.key === k))),
   );
   const [historyError, setHistoryError] = useState<string | null>(null);
+  // Drawings are anchored to times; this maps them onto whichever bars are on screen.
+  const barTimes = useRef<number[]>([]);
+  const [drawing, setDrawing] = useState<DrawingController | null>(null);
+  const [drawState, setDrawState] = useState<DrawingState>({ tool: null, drafting: false, count: 0, selected: false });
 
   const minutes = TIMEFRAMES.find((t) => t.key === timeframe)?.minutes;
   const intradayView = minutes != null;
@@ -167,6 +175,7 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
     const data = bars();
     c.candles.setData(data.map(toCandle));
     c.volume.setData(data.map(toVolume));
+    barTimes.current = data.map((b) => b.time);
 
     const s = studies.current;
     const set = (key: string, values: Values) => s[key]?.setData(toLine(data, values));
@@ -201,6 +210,7 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       c.chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, data.length - LONG_VIEW_BARS), to: data.length + 3 });
     }
     lastCount.current = data.length;
+    drawingRef.current?.refresh();
   }
 
   // Create the chart once.
@@ -234,12 +244,28 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
     });
     volume.priceScale().applyOptions({ scaleMargins: { top: 0.78, bottom: 0 } });
     core.current = { chart, candles, volume };
+    const controller = new DrawingController(
+      chart,
+      candles,
+      container.current!,
+      () => ({ toLogical: (t) => timeToLogical(barTimes.current, t), toTime: (l) => logicalToTime(barTimes.current, l) }),
+      setDrawState,
+    );
+    drawingRef.current = controller;
+    setDrawing(controller);
     return () => {
+      controller.destroy();
+      drawingRef.current = null;
       chart.remove();
       core.current = null;
       studies.current = {};
     };
   }, []);
+
+  // Each stock keeps its own drawings, on every timeframe.
+  useEffect(() => {
+    drawing?.setScope(symbol ? `stock:${symbol}` : null);
+  }, [drawing, symbol]);
 
   // Rebuild the indicator series (and their panes) when the selection or timeframe changes.
   const shownKey = shown.join(",");
@@ -389,6 +415,7 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
           })}
         </div>
       </div>
+      <DrawingToolbar controller={drawing} state={drawState} />
       {historyError && <p className="error small-text chart-note">Couldn't load history: {historyError}</p>}
       {!intradayView && history.current == null && !historyError && <p className="muted small-text chart-note">Loading history…</p>}
       <div className="chart" ref={container} />

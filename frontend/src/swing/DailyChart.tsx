@@ -11,9 +11,12 @@ import {
   createChart,
   createSeriesMarkers,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { Bar } from "../api";
+import { DrawingController, type DrawingState } from "../drawing/controller";
+import { DrawingToolbar } from "../drawing/DrawingToolbar";
+import { indexMapper } from "../drawing/geometry";
 import { sma } from "../live/indicators";
 
 const UP = "#26a69a";
@@ -39,7 +42,17 @@ function line(bars: Bar[], values: (number | null)[]) {
 }
 
 /** Daily candles with volume, 20- and 50-day averages, and arrows where your orders filled. */
-export function DailyChart({ bars, fills, resetKey }: { bars: Bar[]; fills: FillMarker[]; resetKey: string }) {
+type Props = {
+  bars: Bar[];
+  fills: FillMarker[];
+  resetKey: string;
+  /** Where this chart's drawings are saved (one practice session). */
+  drawingScope: string;
+};
+
+export function DailyChart({ bars, fills, resetKey, drawingScope }: Props) {
+  const [drawing, setDrawing] = useState<DrawingController | null>(null);
+  const [drawState, setDrawState] = useState<DrawingState>({ tool: null, drafting: false, count: 0, selected: false });
   const container = useRef<HTMLDivElement>(null);
   const parts = useRef<Parts | null>(null);
   const framed = useRef("");
@@ -74,6 +87,10 @@ export function DailyChart({ bars, fills, resetKey }: { bars: Bar[]; fills: Fill
     volume.priceScale().applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
     const average = (color: string, title: string) =>
       chart.addSeries(LineSeries, { color, title, lineWidth: 2, priceLineVisible: false, crosshairMarkerVisible: false });
+    // A session's bars never change order, so drawings are anchored to bar numbers. That
+    // keeps them in place when a blind session reveals its real dates.
+    const controller = new DrawingController(chart, candles, container.current!, () => indexMapper, setDrawState);
+    setDrawing(controller);
     parts.current = {
       chart,
       candles,
@@ -84,6 +101,7 @@ export function DailyChart({ bars, fills, resetKey }: { bars: Bar[]; fills: Fill
     };
     return () => {
       chart.remove();
+      controller.destroy();
       parts.current = null;
     };
   }, []);
@@ -113,10 +131,16 @@ export function DailyChart({ bars, fills, resetKey }: { bars: Bar[]; fills: Fill
       framed.current = resetKey;
       p.chart.timeScale().setVisibleLogicalRange({ from: Math.max(0, bars.length - VISIBLE_BARS), to: bars.length + 8 });
     }
-  }, [bars, fills, resetKey]);
+    drawing?.refresh();
+  }, [bars, fills, resetKey, drawing]);
+
+  useEffect(() => {
+    drawing?.setScope(drawingScope);
+  }, [drawing, drawingScope]);
 
   return (
     <div className="daily-chart">
+      <DrawingToolbar controller={drawing} state={drawState} />
       <div className="legend" aria-label="Legend">
         <span>
           <i style={{ background: SMA20 }} /> 20-day average

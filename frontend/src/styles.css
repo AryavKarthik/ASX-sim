@@ -1529,3 +1529,61 @@ label.check input {
   padding: 3px 8px;
   font-size: 12px;
 }
+
+/* ---------- drawing tools ---------- */
+
+.draw-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+}
+
+.draw-tools button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  font-size: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.draw-tools button span {
+  color: var(--text);
+}
+
+.draw-tools button.active {
+  color: var(--text);
+  border-color: #e6ebf2;
+  background: #e6ebf21a;
+}
+
+.draw-tools button.danger {
+  color: #ff8a80;
+  border-color: #ff8a80;
+}
+
+.draw-hint {
+  margin-left: 6px;
+  font-size: 12px;
+}
+
+/* The chart sets its own cursor on its canvases; these win while drawing or over a line. */
+.drawing-tool,
+.drawing-tool * {
+  cursor: crosshair !important;
+}
+
+.drawing-hover,
+.drawing-hover * {
+  cursor: move !important;
+}
+
+.daily-chart .draw-tools {
+  margin-bottom: 4px;
+}

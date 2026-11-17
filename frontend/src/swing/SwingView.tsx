@@ -261,7 +261,7 @@ function Session({ initial, onExit }: { initial: SwingState; onExit: () => void 
         )}
 
         <section className="card swing-chart">
-          <DailyChart bars={s.bars} fills={fills} resetKey={`${s.id}-${s.hidden}`} />
+          <DailyChart bars={s.bars} fills={fills} resetKey={`${s.id}-${s.hidden}`} drawingScope={`swing:${s.id}`} />
         </section>
 
         <section className="card performance-card">
