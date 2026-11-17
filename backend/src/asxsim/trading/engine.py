@@ -90,6 +90,10 @@ class ExecutionEngine:
         self._calendar = calendar or asx_calendar()
         self._seed = seed
         self._schedules: dict[date, DaySchedule] = {}
+        # Symbols in a trading halt (set by the live hub, cleared by the symbol's next trade).
+        # Like the ASX, orders are still accepted but nothing matches until the reopening
+        # auction, which is the first trade after the halt.
+        self.halted: set[str] = set()
         self._closed: set[tuple[str, date]] = set()  # (symbol, day) whose close auction ran
         self._changed = False  # an open order changed without filling (e.g. a trail moved)
         self._ids = itertools.count(1)
@@ -164,6 +168,8 @@ class ExecutionEngine:
             auction, status = Auction.OPEN, OrderStatus.QUEUED
         elif phase is MarketPhase.PRE_CSPA:
             auction, status = Auction.CLOSE, OrderStatus.QUEUED
+        elif request.symbol in self.halted:
+            auction, status = Auction.RESUME, OrderStatus.QUEUED
 
         order = Order(
             id=f"O{next(self._ids):05d}",
@@ -186,6 +192,11 @@ class ExecutionEngine:
         )
         if order.type is OrderType.TRAILING_STOP:
             self._update_trail(order, self.quotes[order.symbol].last)
+        if auction is Auction.RESUME:
+            order.message = (
+                f"{order.symbol} looks halted (no recent trades): "
+                "this order waits for the reopening auction"
+            )
         self.orders[order.id] = order
         fills: list[Fill] = []
         if status is OrderStatus.WORKING:
@@ -413,6 +424,8 @@ class ExecutionEngine:
     ) -> list[Fill]:
         """Process one trade in the market. Returns any of our orders that filled."""
         self.quotes[symbol] = MarketQuote(price, bid, ask, minute_volume)
+        resumed = symbol in self.halted  # a trade ends the halt: this is the reopening auction
+        self.halted.discard(symbol)
         local = at.astimezone(SYDNEY)
         if not self._calendar.is_trading_day(local.date()):
             return []
@@ -446,6 +459,13 @@ class ExecutionEngine:
             return fills
 
         if phase is MarketPhase.OPEN:
+            # Reopening auction after a halt: orders queued during the halt, and orders that
+            # were already in the book, match at the reopening price.
+            for order in self.open_orders(symbol):
+                if order.auction is Auction.RESUME or (
+                    resumed and order.status is OrderStatus.WORKING
+                ):
+                    fills += self._auction_fill(order, price, at, "reopening auction")
             triggered, trigger_fills = self._check_triggers(symbol, price, at)
             fills += trigger_fills
             fills += self._continuous(symbol, price, at, volume, bid, ask, skip=triggered)

@@ -1046,3 +1046,22 @@ tr.selected-row {
 .chart-card:has(.panes-2) {
   height: min(86vh, 860px);
 }
+
+/* ---------- trading halts ---------- */
+
+.halt-badge {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #3a1719;
+  color: #ff8a80;
+  cursor: help;
+}
+
+.halt-badge.small {
+  font-size: 10px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}

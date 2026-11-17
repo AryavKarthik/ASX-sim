@@ -9,6 +9,7 @@ type Props = {
   names: Record<string, string>;
   quotes: Record<string, Quote>;
   ticks: Record<string, number>;
+  halted: string[];
   candlesFor: (symbol: string) => Bar[];
   selected: string;
   maxSymbols: number;
@@ -28,7 +29,7 @@ export function displayQuote(quote: Quote | undefined, candles: Bar[]) {
 }
 
 export function Watchlist(props: Props) {
-  const { symbols, names, quotes, ticks, candlesFor, selected, maxSymbols } = props;
+  const { symbols, names, quotes, ticks, halted, candlesFor, selected, maxSymbols } = props;
   const [draft, setDraft] = useState("");
   const code = draft.trim().toUpperCase();
   const canAdd = code in names && !symbols.includes(code) && symbols.length < maxSymbols;
@@ -60,7 +61,14 @@ export function Watchlist(props: Props) {
               onClick={() => props.onSelect(symbol)}
             >
               <div className="wl-name">
-                <span className="wl-code">{symbol}</span>
+                <span className="wl-code">
+                  {symbol}
+                  {halted.includes(symbol) && (
+                    <span className="halt-badge small" title="No trades for 15+ minutes while the rest of the market is trading, so this looks like a trading halt (usually ahead of a company announcement). Yahoo doesn't publish halts, so this is inferred.">
+                      Halted
+                    </span>
+                  )}
+                </span>
                 <span className="muted wl-full">{names[symbol] ?? ""}</span>
               </div>
               <div className="wl-quote">

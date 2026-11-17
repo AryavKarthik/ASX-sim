@@ -156,6 +156,8 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
   const shown = displayQuote(quote, feed.candlesFor(selected));
   const up = (shown.pct ?? 0) >= 0;
   const phase = status?.phase ?? "closed";
+  const halted = status?.halted ?? [];
+  const selectedHalted = halted.includes(selected);
   const marketQuiet = status?.source === "live" && phase !== "open" && status.seconds_since_tick == null;
   const line = feedLine(status, connected, sessionDay, source.kind === "demo" ? source.speed : 1);
 
@@ -166,6 +168,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
         names={names}
         quotes={quotes}
         ticks={feed.ticks}
+        halted={halted}
         candlesFor={feed.candlesFor}
         selected={selected}
         maxSymbols={defaults.max_symbols}
@@ -203,6 +206,11 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
             )}
           </div>
           <div className="clock-block">
+            {selectedHalted && (
+              <span className="halt-badge" title="No trades for 15+ minutes while the rest of the market is trading, so this looks like a trading halt (usually ahead of a company announcement). Yahoo doesn't publish halts, so this is inferred.">
+                Halted
+              </span>
+            )}
             {status?.source === "live" && <span className="delay-badge">{formatDelay(status)}</span>}
             {status?.source === "demo" && <span className="delay-badge demo">Demo</span>}
             <span className="clock" title="The delayed market's clock: real time minus the data delay">
@@ -312,6 +320,7 @@ export function LiveView({ defaults }: { defaults: Defaults }) {
           lastPrice={shown.price}
           account={account}
           phase={phase}
+          halted={selectedHalted}
           journalOptions={defaults.journal}
           onSubmit={placeOrder}
         />

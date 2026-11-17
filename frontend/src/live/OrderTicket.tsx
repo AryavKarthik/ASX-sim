@@ -24,6 +24,7 @@ type Props = {
   lastPrice: number | null;
   account: AccountView | null;
   phase: Phase;
+  halted: boolean;
   journalOptions: JournalOptions;
   onSubmit: (order: OrderCommand) => Promise<CommandResult>;
 };
@@ -66,7 +67,7 @@ function num(text: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, journalOptions, onSubmit }: Props) {
+export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, halted, journalOptions, onSubmit }: Props) {
   const [planOpen, setPlanOpen] = useState(false);
   const [plan, setPlan] = useState<TradePlan>({});
   const [side, setSide] = useState<"buy" | "sell">("buy");
@@ -239,7 +240,7 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, jo
     } else if (order?.status === "pending") {
       setResult({ ok: true, text: "Order placed: waiting for its trigger price." });
     } else if (order?.status === "queued") {
-      setResult({ ok: true, text: `Order placed: waiting for the ${order.auction === "close" ? "closing" : "opening"} auction.` });
+      setResult({ ok: true, text: `Order placed: waiting for the ${order.auction === "close" ? "closing" : order.auction === "resume" ? "reopening" : "opening"} auction.` });
     } else {
       setResult({ ok: true, text: "Order placed: working in the market." });
     }
@@ -248,7 +249,10 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, jo
     setPlanOpen(false);
   }
 
-  const note = phaseNote(phase, conditional);
+  const note =
+    halted && phase === "open"
+      ? `${symbol} looks halted: it hasn't traded for 15+ minutes while the market is open. You can still place an order, but it will wait for the reopening auction and fill at whatever price the stock reopens at, which can be far from the last price.`
+      : phaseNote(phase, conditional);
   const explanation = explain();
   const stepHint =
     lastPrice != null ? `Price step at this price: ${+(tickSize(lastPrice) * 100).toFixed(1)}c` : "";
