@@ -71,7 +71,11 @@ running 20 minutes behind.**
   - indicators you can switch on: EMA 9, SMA 20, VWAP, Bollinger Bands, and RSI and MACD in
     their own panels. Each has a plain-English explanation on hover,
   - long-term history stops before the session day, and weekly/monthly bars are built from
-    daily bars after that cut-off, so a demo can't see how its own day ends.
+    daily bars after that cut-off, so a demo can't see how its own day ends,
+  - **drawing tools:** horizontal lines for support and resistance (snapped to real ASX
+    prices, labelled on the price axis), trend lines and rays. Drag to move, drag an end to
+    adjust, Delete to remove. Lines are anchored to time and price, so they stay in place
+    across zooming and every timeframe, and each stock keeps its own (saved in your browser).
 - **Trade journal:**
   - fills are grouped into round-trip trades automatically,
   - write your plan (setup, reason, stop, target) on the order ticket and see the risk/reward
@@ -110,6 +114,7 @@ running 20 minutes behind.**
 - **Blind practice:** a mystery stock from a random date, with the name and dates hidden
   until the end, so you can't trade on what you remember.
 - Your result is measured against simply buying and holding the same stock.
+- The same drawing tools as the live chart, saved per session.
 - The server never sends a bar beyond the current day; sessions are saved so you can pick
   one up later.
 
@@ -229,7 +234,8 @@ outside the repository.
 
 CI runs all of these, plus a secret scan, on every pull request. The backend has over 300
 tests at about 90% coverage; none of them touch the network or need an API key (Yahoo and Claude sit behind small
-interfaces with stand-ins). The frontend tests cover the indicator and ratio maths.
+interfaces with stand-ins). The frontend tests cover the indicator, ratio and
+drawing-placement maths.
 
 Pre-commit hooks run these checks, plus a secret scanner, on every commit:
 `uv tool install pre-commit && pre-commit install`.
@@ -252,8 +258,9 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 3, part 2:** company pages (profile, fundamentals, valuation at the live price, 52-week range, returns)
 - [x] **Week 3, part 3:** swing practice on daily bars (next-day fills, gaps, blind mode, vs buy and hold)
 - [x] **Week 3, part 4:** portfolio polish: sample-data generator, screenshots, architecture and docs → `v1.0`
+- [x] **After v1.0:** drawing tools on charts (horizontal lines, trend lines, rays)
 - [ ] **Secondary:** trading inside past-day replay
-- [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits, drawing tools, ASX options, a refreshed ASX 200 list (a few codes have changed since it was compiled)
+- [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits, ASX options, a refreshed ASX 200 list (a few codes have changed since it was compiled)
 
 ## License
 
