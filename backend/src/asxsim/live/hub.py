@@ -43,6 +43,8 @@ RECENT_ROWS = 100
 FeedFactory = Callable[[LiveMarket], PriceFeed]
 HistoryLoader = Callable[[list[str]], tuple[pd.DataFrame, str | None]]
 
+COACH_TRADES = 20  # how many recent trades the AI coach is shown
+
 
 def _round(value: float | None) -> float | None:
     # Yahoo sends float32 values (58.45 arrives as 58.4500007629); 4 decimals removes the noise.
@@ -455,6 +457,88 @@ class LiveHub:
             now,
             self.benchmark(start, now) if trades else [],
         )
+
+    def coach_context(self, symbol: str | None) -> dict[str, Any]:
+        """What the AI coach is shown: the account and market as of the market clock.
+
+        Everything here comes from state the hub already holds, which never runs ahead of
+        the (delayed, or replayed) market clock. Nothing later can leak to the coach.
+        """
+        now = self.market.market_now(self._clock())
+        account = self.account_json()
+        analytics = self.analytics_json()
+        focus: dict[str, Any] | None = None
+        if symbol is not None and symbol in self.market.symbols:
+            quote = self.market.quote(symbol)
+            today = [
+                c
+                for c in self.market.candles(symbol)
+                if c.time.astimezone(SYDNEY).date() == now.astimezone(SYDNEY).date()
+                and c.time <= now
+            ]
+            volume = sum(c.volume for c in today)
+            focus = {
+                "symbol": symbol,
+                "quote": None if quote is None else quote_json(quote),
+                "looks_halted": symbol in self.engine.halted,
+                "session": None
+                if not today
+                else {
+                    "open": round(today[0].open, 4),
+                    "high": round(max(c.high for c in today), 4),
+                    "low": round(min(c.low for c in today), 4),
+                    "last": round(today[-1].close, 4),
+                    "volume": volume,
+                    "vwap": round(
+                        sum((c.high + c.low + c.close) / 3 * c.volume for c in today) / volume, 4
+                    )
+                    if volume
+                    else None,
+                    "minutes_traded": len(today),
+                },
+            }
+        mode = (
+            f"replaying the recorded session of {self.session_day} as if live"
+            if self.source == "demo"
+            else "live market, prices delayed about 20 minutes"
+        )
+        return {
+            "market_time": now.astimezone(SYDNEY).isoformat(timespec="minutes"),
+            "mode": mode,
+            "phase": self.market.phase_at(self._clock()).value,
+            "account": {
+                key: account[key]
+                for key in (
+                    "starting_cash",
+                    "equity",
+                    "net_pnl",
+                    "cash",
+                    "settled_cash",
+                    "buying_power",
+                    "unrealised",
+                    "realised",
+                    "fees",
+                )
+            },
+            "positions": account["positions"],
+            "open_orders": [
+                o for o in account["orders"] if o["status"] in ("working", "queued", "pending")
+            ],
+            "recent_trades": account["trades"][:COACH_TRADES],
+            "performance": {
+                key: analytics[key]
+                for key in (
+                    "summary",
+                    "trades",
+                    "risk",
+                    "by_setup",
+                    "by_time",
+                    "by_symbol",
+                    "discipline",
+                )
+            },
+            "watching": focus,
+        }
 
     def trades_json(self, prices: dict[str, Decimal]) -> list[dict[str, Any]]:
         """Round-trip trades, newest first, each with its journal entry and R-multiple."""

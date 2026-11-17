@@ -197,9 +197,18 @@ export type TradePlan = {
   confidence?: number;
 };
 
+export type CoachStatus = {
+  available: boolean; // false until an API key is in .env
+  chat_model: string;
+  review_model: string;
+  spent_usd: number; // estimated spend this calendar month
+  budget_usd: number;
+  calls: number;
+};
+
 export type CommandResult =
-  | { type: "result"; request_id: string; action: string; ok: true; order?: OrderView; analytics?: Analytics }
-  | { type: "result"; request_id: string; action: string; ok: false; error: string };
+  | { type: "result"; request_id: string; action: string; ok: true; order?: OrderView; analytics?: Analytics; coach?: CoachStatus }
+  | { type: "result"; request_id: string; action: string; ok: false; error: string; coach?: CoachStatus };
 
 export type OrderCommand = {
   symbol: string;
@@ -225,6 +234,7 @@ export type LiveMessage =
   | { type: "tick"; symbol: string; live: boolean; quote: Quote; candle: Bar | null }
   | { type: "account"; account: AccountView; fills: FillView[] }
   | CommandResult
+  | { type: "coach"; request_id: string; delta: string }
   | ({ type: "status" } & LiveStatus);
 
 export type Defaults = {
@@ -232,6 +242,7 @@ export type Defaults = {
   max_symbols: number;
   universe: { code: string; name: string }[];
   journal: JournalOptions;
+  coach: CoachStatus;
 };
 
 export type FeedSource =

@@ -73,8 +73,17 @@ running 20 minutes behind.**
     gross profit,
   - results by setup, by time of day and by stock, and a discipline check comparing trades
     where you followed your plan with trades where you didn't.
-- **AI coach (Claude):** knows your chart, positions and journal, and coaches you during the
-  session and afterwards.
+- **AI coach (Claude)** in the Coach view ([ADR 0010](docs/adr/0010-ai-coach.md)):
+  - ask anything about trading, with replies streamed as they are written. The coach sees
+    your account, positions, open orders, journal and statistics, and the stock you're
+    watching,
+  - a **Full review** button for a deeper review of your journal and statistics,
+  - a coach, not a tipster: it explains, questions your plan and reviews your trades, and
+    won't say what to buy or sell or predict prices,
+  - it only sees the market up to the (delayed or replayed) market clock,
+  - cheap by design: Claude Haiku for chat and Claude Sonnet for reviews, with a monthly
+    budget the app enforces (default US$10). Needs your own API key in `.env`; without one
+    the coach is simply switched off.
 
 **Secondary: look back at past days**
 - Replay a recorded past trading day minute by minute, to review what happened or practise
@@ -169,8 +178,9 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 2, part 3:** performance analytics (equity vs ASX 200, trade statistics, drawdown, Sharpe, breakdowns, discipline)
 - [x] **Week 2, part 4:** chart timeframes (1m to monthly) and indicators (EMA, SMA, VWAP, Bollinger, RSI, MACD)
 - [x] **Week 2, part 5:** trading halts, inferred from the feed, with a reopening auction ([ADR 0009](docs/adr/0009-inferred-trading-halts.md))
-- [ ] **Week 3:** AI coach, watchlists, security pages, deploy → `v1.0`
-- [ ] **Secondary:** trading inside past-day replay, daily replay over longer periods
+- [x] **Week 3, part 1:** AI coach (chat and full reviews, coach-not-tipster, monthly budget)
+- [ ] **Week 3, next:** company pages, daily replay over long periods, portfolio polish → `v1.0`
+- [ ] **Secondary:** trading inside past-day replay
 - [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options
 
 ## License

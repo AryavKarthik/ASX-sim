@@ -36,3 +36,6 @@ Thumbs.db
 
 # --- Claude Code local state ---
 .claude/
+
+# Scratch state for local dev servers
+.devstate/
