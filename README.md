@@ -17,10 +17,21 @@ the same rules as the real market:
 - the closing single price auction.
 
 Then you review every trade with a journal, performance analytics and a Claude-powered
-coach that challenges your reasoning instead of handing out tips.
+coach that challenges your reasoning instead of handing out tips. A separate swing-practice
+mode lets you trade through months of daily prices in an evening.
 
-> **Status:** early development. Building toward v1.0 over a 3-week sprint.
-> Track progress on the [roadmap](#roadmap).
+> **Status:** v1.0. Everything on the [roadmap](#roadmap) for the planned three-week build
+> is done. It is a personal learning tool: simulated money only, and nothing here is
+> financial advice.
+
+![The trading screen: watchlist, live chart with indicators, order ticket and account](docs/images/trading.jpg)
+
+| Performance view | AI coach |
+|---|---|
+| ![Statistics, equity curve against the ASX 200, and breakdowns](docs/images/performance.jpg) | ![The coach chat](docs/images/coach.jpg) |
+
+*Screenshots use invented sample prices (see [Market data and licensing](#market-data-and-licensing)),
+and the coach reply shown is the built-in practice reply, not an AI answer.*
 
 ---
 
@@ -42,16 +53,18 @@ running 20 minutes behind.**
 
 **Core: live day trading on delayed data**
 - A streaming feed of delayed prices, updated on every new price (not once a minute),
-  with a 1-minute polling fallback if the stream drops.
+  with a 15-second polling fallback if the stream drops.
 - A live candlestick chart and quote that update tick by tick, plus a delayed-market clock and
   phase badge.
 - **Realistic execution:**
   - market, limit, stop, stop-limit and trailing-stop orders; good-for-day or good-till-cancelled,
-  - fills modelled from real volume, with participation caps and price impact.
+  - fills modelled from real volume: a one-tick spread, a cap on how much of each
+    minute's volume you can take, partial fills, and a queue estimate for limit orders.
 - **ASX market structure:** trading calendar and public holidays, pre-open, opening and
-  closing single price auctions with the ASX's randomised timing, trading halts.
+  closing single price auctions with the ASX's randomised timing, and trading halts
+  (inferred from the feed, with a reopening auction).
 - **Account mechanics:** cash vs settled cash (T+2), average cost, realised and unrealised
-  P&L, configurable brokerage, dividends and splits.
+  P&L, brokerage on every order. Long only: no short selling or margin.
 - **Charts:**
   - candlesticks and volume at 1, 5, 15 and 60 minutes (built from the session's 1-minute
     candles), plus daily, weekly and monthly with up to decades of history,
@@ -108,21 +121,36 @@ running 20 minutes behind.**
 
 ```mermaid
 flowchart LR
-    UI["React + TypeScript UI<br/>live chart · order ticket · journal · coach"] <-->|REST + WebSocket| API[FastAPI]
-    API --> Live["Live session<br/>delayed-market clock"]
+    UI["React + TypeScript UI<br/>chart · ticket · journal · performance · company · coach · swing"] <-->|REST + WebSocket| API[FastAPI]
+    API --> Hub["Live hub<br/>one shared feed, delayed-market clock, halts"]
+    Hub --> Feed["Delayed price stream<br/>Yahoo (swappable), polling fallback"]
+    Hub --> Demo["Demo feed<br/>a recorded day played as live"]
+    Hub --> Fill["Execution engine<br/>spread · liquidity · auctions · stops"]
+    Fill --> Ledger["Account<br/>cash · positions · T+2 · brokerage"]
+    Ledger --> Journal["Journal<br/>round-trip trades, plans, reviews"]
+    Journal --> Analytics["Performance analytics<br/>vs ASX 200"]
+    Hub -->|"snapshot as of the market clock"| Coach["AI coach<br/>budget ledger"] --> Claude[(Claude API)]
+    API --> Swing["Swing practice<br/>daily bars, next-day fills"]
+    API --> History["History and company data<br/>cut off before the session day"]
     API -.-> Replay["Past-day replay<br/>(secondary)"]
-    Live & Replay --> Fill["Fill engine<br/>spread · liquidity · auctions"]
-    Fill --> Ledger["Account ledger<br/>cash · lots · T+2 · fees"]
-    Ledger --> Analytics
-    API --> Coach["AI coach"] --> Claude[(Claude API)]
-    Live --> Feed["Delayed price stream<br/>Yahoo (swappable)"]
-    Replay --> Store["Recorded 1-minute bars"]
+    Demo & Replay --> Store["Recorded 1-minute bars<br/>(private, or invented samples)"]
 ```
 
-Key design decisions are recorded as [Architecture Decision Records](docs/adr/).
-[ADR 0008](docs/adr/0008-execution-model.md) explains exactly how simulated orders fill.
-[ADR 0007](docs/adr/0007-live-delayed-trading-is-the-core.md) explains the focus on live
-delayed trading.
+One rule runs through the whole design: **nothing may see past the market clock.** Fills,
+the ASX 200 benchmark, long-term charts, company ratios, the coach's snapshot and swing
+practice are each cut off at "now", whether that is the delayed live market or a replayed
+day, and the cut-offs are covered by tests.
+
+Key design decisions are recorded as [Architecture Decision Records](docs/adr/):
+
+| ADR | Decision |
+|---|---|
+| [0004](docs/adr/0004-data-licensing.md) | Market data is never committed or published |
+| [0007](docs/adr/0007-live-delayed-trading-is-the-core.md) | Live trading on delayed data is the core |
+| [0008](docs/adr/0008-execution-model.md) | How simulated orders fill |
+| [0009](docs/adr/0009-inferred-trading-halts.md) | Trading halts are inferred from the feed |
+| [0010](docs/adr/0010-ai-coach.md) | The AI coach teaches and reviews; it never tips |
+| [0011](docs/adr/0011-swing-practice-on-daily-bars.md) | Swing practice on daily bars |
 
 ## Market data and licensing
 
@@ -132,19 +160,32 @@ stream of delayed prices for trading, plus a scheduled job that records each day
 bars into a *private* repository for charts and past-day review. See
 [ADR 0004](docs/adr/0004-data-licensing.md).
 
+Because real prices can't be published, the repository includes a generator for **invented
+sample prices** (`python -m asxsim.data.sample`). The screenshots above use it, and so can
+you, to try the demo without downloading anything.
+
 ## Getting started
 
 Requires [uv](https://docs.astral.sh/uv/) (it installs the right Python version
 automatically) and [Node.js](https://nodejs.org/) 20+.
 
-**1. Get some market data.** Record the last week of 1-minute bars for a few stocks:
+**1. Get some data for the demo.** Either make up three sample days (instant, no network):
 
 ```bash
 git clone https://github.com/AryavKarthik/ASX-sim.git
 cd ASX-sim/backend
 uv sync
+uv run python -m asxsim.data.sample --out ../../ASX-sim-data/bars_1m
+```
+
+or record the last week of real 1-minute bars for a few stocks, for your own use:
+
+```bash
 uv run python -m asxsim.data.recorder --out ../../ASX-sim-data/bars_1m --symbols BHP CBA CSL
 ```
+
+Live trading, long-term charts, company pages and swing practice fetch from Yahoo as you
+use them and need no recorded data.
 
 By default the app reads data from an `ASX-sim-data` folder next to the repo. Set
 `ASXSIM_DATA_DIR` to use somewhere else.
@@ -167,14 +208,28 @@ The app opens on the **Live market (delayed)** tab. During ASX trading hours (ab
 to 4:30pm Sydney time with the delay) your watchlist streams live. Outside those hours it
 shows the last session, and **Try the demo** plays a recorded day as if it were live.
 
+**3. Switch on the AI coach (optional).** Create an API key at
+[console.anthropic.com](https://console.anthropic.com/) and set a monthly spend limit
+there. Copy `.env.example` to `.env`, paste the key after `ANTHROPIC_API_KEY=`, and restart
+the backend. `.env` is gitignored. The app stops calling the API at
+`COACH_MONTHLY_BUDGET_USD` (default US$10); chat costs a fraction of a cent per question.
+To see the Coach screen without a key, set `COACH_PRACTICE=1` for a canned reply.
+
+Your simulated account, journal, coach spend and swing sessions are saved in `~/.asxsim`,
+outside the repository.
+
 ## Development
 
-| Check | Command (from `backend/`) |
-|---|---|
-| Lint | `uv run ruff check .` |
-| Format | `uv run ruff format .` |
-| Types | `uv run mypy src tests` |
-| Tests + coverage | `uv run pytest --cov=asxsim` |
+| Check | Backend (from `backend/`) | Frontend (from `frontend/`) |
+|---|---|---|
+| Lint and format | `uv run ruff check .` and `uv run ruff format .` | |
+| Types | `uv run mypy src tests` (strict) | `npm run typecheck` |
+| Tests | `uv run pytest --cov=asxsim` | `npm test` |
+| Build | | `npm run build` |
+
+CI runs all of these, plus a secret scan, on every pull request. The backend has over 300
+tests at about 90% coverage; none of them touch the network or need an API key (Yahoo and Claude sit behind small
+interfaces with stand-ins). The frontend tests cover the indicator and ratio maths.
 
 Pre-commit hooks run these checks, plus a secret scanner, on every commit:
 `uv tool install pre-commit && pre-commit install`.
@@ -196,9 +251,9 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 3, part 1:** AI coach (chat and full reviews, coach-not-tipster, monthly budget)
 - [x] **Week 3, part 2:** company pages (profile, fundamentals, valuation at the live price, 52-week range, returns)
 - [x] **Week 3, part 3:** swing practice on daily bars (next-day fills, gaps, blind mode, vs buy and hold)
-- [ ] **Week 3, next:** portfolio polish → `v1.0`
+- [x] **Week 3, part 4:** portfolio polish: sample-data generator, screenshots, architecture and docs → `v1.0`
 - [ ] **Secondary:** trading inside past-day replay
-- [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options
+- [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits, drawing tools, ASX options, a refreshed ASX 200 list (a few codes have changed since it was compiled)
 
 ## License
 
