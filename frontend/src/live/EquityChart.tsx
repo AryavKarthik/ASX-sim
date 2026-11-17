@@ -17,8 +17,24 @@ function prepare(points: Point[]) {
     .map(([time, value]) => ({ time: time as UTCTimestamp, value }));
 }
 
-/** Your equity over time, against the ASX 200 rescaled to the same starting cash (one $ axis). */
-export function EquityChart({ curve, benchmark }: { curve: Point[]; benchmark: Point[] }) {
+type Labels = { account: string; benchmark: string; benchmarkTitle: string };
+const ASX200: Labels = {
+  account: "Your account",
+  benchmark: "ASX 200, if you'd invested the same starting cash",
+  benchmarkTitle: "ASX 200",
+};
+
+type Props = {
+  curve: Point[];
+  benchmark: Point[];
+  /** What the two lines are called (defaults to your account vs the ASX 200). */
+  labels?: Labels;
+  /** Draw equity as a continuous line (daily values) instead of steps at each closed trade. */
+  smooth?: boolean;
+};
+
+/** Your equity over time against a benchmark rescaled to the same starting cash (one $ axis). */
+export function EquityChart({ curve, benchmark, labels = ASX200, smooth = false }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const series = useRef<{ chart: IChartApi; account: ISeriesApi<"Line">; index: ISeriesApi<"Line"> } | null>(null);
 
@@ -41,7 +57,7 @@ export function EquityChart({ curve, benchmark }: { curve: Point[]; benchmark: P
     const index = chart.addSeries(LineSeries, {
       color: BENCHMARK,
       lineWidth: 2,
-      title: "ASX 200",
+      title: labels.benchmarkTitle,
       priceLineVisible: false,
     });
     const account = chart.addSeries(LineSeries, {
@@ -49,7 +65,7 @@ export function EquityChart({ curve, benchmark }: { curve: Point[]; benchmark: P
       lineWidth: 2,
       title: "You",
       priceLineVisible: false,
-      lineType: 1, // steps: equity changes when trades close
+      lineType: smooth ? 0 : 1, // steps: equity changes when trades close
     });
     series.current = { chart, account, index };
     return () => {
@@ -70,11 +86,11 @@ export function EquityChart({ curve, benchmark }: { curve: Point[]; benchmark: P
     <div className="equity">
       <div className="legend" aria-label="Legend">
         <span>
-          <i style={{ background: ACCOUNT }} /> Your account
+          <i style={{ background: ACCOUNT }} /> {labels.account}
         </span>
         {benchmark.length > 0 && (
           <span>
-            <i style={{ background: BENCHMARK }} /> ASX 200, if you'd invested the same starting cash
+            <i style={{ background: BENCHMARK }} /> {labels.benchmark}
           </span>
         )}
       </div>

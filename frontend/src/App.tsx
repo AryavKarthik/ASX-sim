@@ -4,8 +4,9 @@ import { ReplayView } from "./components/ReplayView";
 import { SetupPanel, type StartedSession } from "./components/SetupPanel";
 import { LiveView } from "./live/LiveView";
 import type { Defaults } from "./live/types";
+import { SwingView } from "./swing/SwingView";
 
-type Mode = "live" | "replay";
+type Mode = "live" | "swing" | "replay";
 
 export function App() {
   const [mode, setMode] = useState<Mode>("live");
@@ -30,6 +31,9 @@ export function App() {
           <button role="tab" aria-selected={mode === "live"} className={mode === "live" ? "active" : ""} onClick={() => setMode("live")}>
             Live market (delayed)
           </button>
+          <button role="tab" aria-selected={mode === "swing"} className={mode === "swing" ? "active" : ""} onClick={() => setMode("swing")}>
+            Swing practice
+          </button>
           <button role="tab" aria-selected={mode === "replay"} className={mode === "replay" ? "active" : ""} onClick={() => setMode("replay")}>
             Past-day replay
           </button>
@@ -40,6 +44,8 @@ export function App() {
         {error && <p className="error">{error}</p>}
         {mode === "live" ? (
           defaults && <LiveView defaults={defaults} />
+        ) : mode === "swing" ? (
+          <SwingView />
         ) : session ? (
           <ReplayView key={session.id} sessionId={session.id} onExit={() => setSession(null)} />
         ) : (

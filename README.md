@@ -89,6 +89,17 @@ running 20 minutes behind.**
     budget the app enforces (default US$10). Needs your own API key in `.env`; without one
     the coach is simply switched off.
 
+**Swing practice: months of daily bars in an evening** ([ADR 0011](docs/adr/0011-swing-practice-on-daily-bars.md))
+- Pick a stock and a period (or take a surprise), then step forward one trading day, week
+  or month at a time. You only ever see up to "today's" close.
+- Market, limit and stop orders fill on the following days. A price that gaps past your
+  stop fills at the open, as in real life.
+- **Blind practice:** a mystery stock from a random date, with the name and dates hidden
+  until the end, so you can't trade on what you remember.
+- Your result is measured against simply buying and holding the same stock.
+- The server never sends a bar beyond the current day; sessions are saved so you can pick
+  one up later.
+
 **Secondary: look back at past days**
 - Replay a recorded past trading day minute by minute, to review what happened or practise
   outside market hours. It uses a replay clock and a time gate so it never shows the future.
@@ -184,7 +195,8 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 2, part 5:** trading halts, inferred from the feed, with a reopening auction ([ADR 0009](docs/adr/0009-inferred-trading-halts.md))
 - [x] **Week 3, part 1:** AI coach (chat and full reviews, coach-not-tipster, monthly budget)
 - [x] **Week 3, part 2:** company pages (profile, fundamentals, valuation at the live price, 52-week range, returns)
-- [ ] **Week 3, next:** daily replay over long periods, portfolio polish → `v1.0`
+- [x] **Week 3, part 3:** swing practice on daily bars (next-day fills, gaps, blind mode, vs buy and hold)
+- [ ] **Week 3, next:** portfolio polish → `v1.0`
 - [ ] **Secondary:** trading inside past-day replay
 - [ ] **Later:** real-time data provider, short selling and margin, franking credits, drawing tools, ASX options
 
