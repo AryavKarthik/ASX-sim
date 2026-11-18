@@ -1,7 +1,8 @@
 import { useState } from "react";
 
+import { dayPnl } from "../app/dayPnl";
 import { JournalPanel } from "./JournalPanel";
-import type { AccountView, CommandResult, JournalEntry, JournalOptions, OrderCommand, OrderView } from "./types";
+import type { AccountView, CommandResult, JournalEntry, JournalOptions, OrderCommand, OrderView, Quote } from "./types";
 
 export type ActivityTab = "positions" | "orders" | "fills" | "journal";
 type Tab = ActivityTab;
@@ -71,10 +72,13 @@ type Props = {
   tab?: ActivityTab;
   onTrade?: (symbol: string, side: "buy" | "sell") => void;
   names?: Record<string, string>;
+  /** Live quotes, for each holding's change today. */
+  quotes?: Record<string, Quote>;
+  sessionDay?: string | null;
 };
 
 /** Positions, orders, fills and the trade journal, below the chart. */
-export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOptions, onJournalSave, tab: fixedTab, onTrade, names = {} }: Props) {
+export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOptions, onJournalSave, tab: fixedTab, onTrade, names = {}, quotes = {}, sessionDay = null }: Props) {
   const [chosen, setTab] = useState<Tab>("positions");
   const tab = fixedTab ?? chosen;
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +86,12 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOpti
   const orders = account?.orders ?? [];
   const fills = account?.fills ?? [];
   const openCount = orders.filter((o) => ["pending", "queued", "working"].includes(o.status)).length;
+
+  const equity = Number(account?.equity ?? 0);
+  const dayChange = (symbol: string, _quantity: number): number | null => {
+    const position = positions.find((p) => p.symbol === symbol);
+    return position ? dayPnl(position, quotes[symbol], account?.fills ?? [], sessionDay) : null;
+  };
 
   async function run(action: Promise<CommandResult>) {
     const reply = await action;
@@ -126,7 +136,9 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOpti
                   <th className="num">Shares</th>
                   <th className="num">Avg cost</th>
                   <th className="num">Last</th>
+                  <th className="num" title="Today's profit or loss: shares held overnight from yesterday's close, shares bought today from what you paid">Day change</th>
                   <th className="num">Market value</th>
+                  <th className="num" title="Share of your account's total value">Weight</th>
                   <th className="num">Unrealised P&amp;L</th>
                   <th className="num">Realised P&amp;L</th>
                   <th />
@@ -142,7 +154,27 @@ export function ActivityTabs({ account, onSelect, onCancel, onOrder, journalOpti
                     <td className="num">{p.quantity.toLocaleString("en-AU")}</td>
                     <td className="num">${p.average_price}</td>
                     <td className="num">{p.last_price ? `$${p.last_price}` : "—"}</td>
-                    <td className="num">{money(p.market_value)}</td>
+                    <td className={`num ${tone(String(dayChange(p.symbol, p.quantity) ?? 0))}`}>
+                      {dayChange(p.symbol, p.quantity) == null ? "—" : money(String(dayChange(p.symbol, p.quantity)), true)}
+                      {(() => {
+                        // As a percentage of what the holding was worth at the start of today.
+                        const change = dayChange(p.symbol, p.quantity);
+                        const base = Number(p.market_value ?? 0) - (change ?? 0);
+                        if (change == null || !base) return null;
+                        const percent = (100 * change) / base;
+                        return (
+                          <span className="cell-sub">
+                            {percent >= 0 ? "+" : ""}
+                            {percent.toFixed(2)}%
+                          </span>
+                        );
+                      })()}
+                    </td>
+                    <td className="num">
+                      {money(p.market_value)}
+                      <span className="cell-sub muted">cost {money(String(Number(p.average_price) * p.quantity))}</span>
+                    </td>
+                    <td className="num">{equity && p.market_value ? `${((100 * Number(p.market_value)) / equity).toFixed(1)}%` : "—"}</td>
                     <td className={`num ${tone(p.unrealised)}`}>
                       {money(p.unrealised, true)}
                       {p.unrealised_pct != null && <span className="cell-sub">{p.unrealised_pct >= 0 ? "+" : ""}{p.unrealised_pct.toFixed(2)}%</span>}

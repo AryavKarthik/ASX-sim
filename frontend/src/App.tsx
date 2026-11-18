@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { MarketProvider } from "./app/market";
 import { useRoute } from "./app/router";
+import { Logo } from "./app/ui";
 import { Shell } from "./app/Shell";
 import type { Defaults } from "./live/types";
 import { HomePage } from "./pages/HomePage";
@@ -25,9 +26,7 @@ export function App() {
   if (error) {
     return (
       <div className="boot-message">
-        <h1>
-          ASX<span>-sim</span>
-        </h1>
+        <Logo size={40} />
         <p className="error">Can't reach the backend: {error}</p>
         <p className="muted">Start it with scripts\dev.ps1 (or `uv run uvicorn asxsim.api.app:app` in backend/), then refresh.</p>
       </div>

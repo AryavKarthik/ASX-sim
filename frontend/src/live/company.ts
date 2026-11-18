@@ -20,6 +20,25 @@ export type Fundamentals = {
   ex_dividend_date: string | null;
   reporting_currency: string | null;
   trading_currency: string | null;
+  forward_dividend_per_share: number | null;
+  five_year_average_yield: number | null; // already a percentage
+  operating_margin: number | null;
+  gross_margin: number | null;
+  revenue_growth: number | null;
+  earnings_growth: number | null;
+  total_cash: number | null;
+  total_debt: number | null;
+  current_ratio: number | null;
+};
+
+export type Analysts = {
+  rating: string | null;
+  rating_score: number | null; // 1 = strong buy .. 5 = strong sell
+  count: number | null;
+  target_mean: number | null;
+  target_median: number | null;
+  target_high: number | null;
+  target_low: number | null;
 };
 
 export type Company = {
@@ -33,8 +52,14 @@ export type Company = {
   headquarters: string | null;
   employees: number | null;
   fundamentals: Fundamentals;
+  analysts: Analysts;
+  ownership: { insiders: number | null; institutions: number | null; float_shares: number | null };
+  officers: { name: string; title: string }[];
+  dividends: { date: string; amount: number }[];
   price: {
     as_of: string | null;
+    sma50: number | null;
+    sma200: number | null;
     last_close: number | null;
     week52_high: number | null;
     week52_low: number | null;

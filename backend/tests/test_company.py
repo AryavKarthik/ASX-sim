@@ -130,6 +130,7 @@ def test_company_endpoint_cuts_price_history_off_before_the_session_day(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setattr(company, "yahoo_info", lambda s: INFO)
+    monkeypatch.setattr(company, "yahoo_dividends", lambda s: [(date(2026, 8, 19), 1.5)])
     days = ["2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"]
     monkeypatch.setattr(history, "yahoo_daily", lambda s: yahoo_daily(days))
     client = TestClient(app)
@@ -139,4 +140,66 @@ def test_company_endpoint_cuts_price_history_off_before_the_session_day(
     assert body["name"] == "BHP Group Limited"
     assert body["price"]["as_of"] == "2026-11-12"  # the demo day itself is unseen
     assert body["price"]["last_close"] == 52.5
+    assert body["dividends"] == [{"date": "2026-08-19", "amount": 1.5}]
     assert client.get("/api/live/company", params={"symbol": "ZZZ"}).status_code == 404
+
+
+def test_analysts_ownership_and_officers_are_picked_out() -> None:
+    info = {
+        **INFO,
+        "recommendationKey": "buy",
+        "recommendationMean": 2.1,
+        "numberOfAnalystOpinions": 14.0,
+        "targetMeanPrice": 62.5,
+        "targetHighPrice": 70.0,
+        "targetLowPrice": 50.0,
+        "heldPercentInstitutions": 0.35,
+        "heldPercentInsiders": 0.003,
+        "companyOfficers": [
+            {"name": "Mr. Mike  Henry", "title": "CEO"},
+            {"name": "No title"},
+            "junk",
+        ],
+    }
+
+    p = company.to_profile("BHP", info)
+
+    assert p["analysts"] == {
+        "rating": "Buy",
+        "rating_score": 2.1,
+        "count": 14,
+        "target_mean": 62.5,
+        "target_median": None,
+        "target_high": 70.0,
+        "target_low": 50.0,
+    }
+    assert p["ownership"]["institutions"] == 0.35
+    assert p["officers"] == [{"name": "Mr. Mike Henry", "title": "CEO"}]
+    assert company.to_profile("X", {"recommendationKey": "none"})["analysts"]["rating"] is None
+
+
+def test_dividends_are_newest_first_and_cut_off_before_until() -> None:
+    paid = [(date(2025, 2, 19), 2.25), (date(2025, 8, 20), 2.6), (date(2026, 2, 18), 2.35)]
+    calls: list[str] = []
+
+    def fetch(symbol: str) -> list[tuple[date, float]]:
+        calls.append(symbol)
+        return paid
+
+    rows = company.dividends("CBA", fetch=fetch)
+    assert [r["date"] for r in rows] == ["2026-02-18", "2025-08-20", "2025-02-19"]
+
+    cut = company.dividends("CBA", until=date(2026, 1, 1), fetch=fetch)
+    assert [r["amount"] for r in cut] == [2.6, 2.25]  # the 2026 payment hasn't happened yet
+    assert calls == ["CBA.AX"]  # fetched once, then cached
+
+
+def test_price_stats_include_50_and_200_day_averages() -> None:
+    start = date(2025, 1, 1)
+    daily = bars({(start + timedelta(days=i)).isoformat(): float(i) for i in range(250)})
+
+    stats = company.price_stats(daily)
+
+    assert stats["sma50"] == sum(range(200, 250)) / 50
+    assert stats["sma200"] == sum(range(50, 250)) / 200
+    assert company.price_stats(daily[:40])["sma50"] is None

@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { Bar } from "../api";
-import type { AccountView, CommandResult, FeedSource, LiveMessage, LiveStatus, Quote } from "./types";
+import type { AccountView, CommandResult, FeedSource, LiveMessage, LiveStatus, Quote, TradePrint } from "./types";
+
+const MAX_PRINTS = 60; // recent trades kept per stock for the course of sales
 
 function liveSocketUrl(symbols: string[], source: FeedSource): string {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
@@ -23,6 +25,8 @@ export type LiveFeed = {
   ticks: Record<string, number>;
   account: AccountView | null;
   candlesFor: (symbol: string) => Bar[];
+  /** Recent trades, newest first (only those seen since this page opened). */
+  tradesFor: (symbol: string) => TradePrint[];
   closedReason: string | null;
   /** Send a command (order, cancel, reset_account) and wait for the server's reply. */
   command: (
@@ -52,6 +56,7 @@ export function useLiveFeed(
   const [account, setAccount] = useState<AccountView | null>(null);
   const [closedReason, setClosedReason] = useState<string | null>(null);
   const candles = useRef(new Map<string, Bar[]>());
+  const prints = useRef(new Map<string, TradePrint[]>());
   const socket = useRef<WebSocket | null>(null);
   const pending = useRef(new Map<string, (r: CommandResult) => void>());
   const streams = useRef(new Map<string, (text: string) => void>());
@@ -109,6 +114,7 @@ export function useLiveFeed(
     const ws = new WebSocket(liveSocketUrl(symbolsRef.current, source));
     socket.current = ws;
     candles.current = new Map();
+    prints.current = new Map();
     buffered.current = { quotes: new Map(), candles: new Map() };
     shown.current = new Set();
     setQuotes({});
@@ -144,6 +150,12 @@ export function useLiveFeed(
           // Hold the update; it's drawn on the next refresh (immediately in "Live" mode).
           const buffer = buffered.current;
           buffer.quotes.set(message.symbol, message.quote);
+          if (message.live && (message.volume ?? 0) > 0) {
+            const list = prints.current.get(message.symbol) ?? [];
+            list.unshift({ time: message.quote.time, price: message.quote.price, volume: message.volume ?? 0 });
+            if (list.length > MAX_PRINTS) list.length = MAX_PRINTS;
+            prints.current.set(message.symbol, list);
+          }
           if (message.candle) {
             const perSymbol = buffer.candles.get(message.symbol) ?? new Map<number, Bar>();
             perSymbol.set(message.candle.time, message.candle); // latest version of each minute
@@ -211,6 +223,7 @@ export function useLiveFeed(
     ticks,
     account,
     candlesFor: (symbol) => candles.current.get(symbol) ?? [],
+    tradesFor: (symbol) => prints.current.get(symbol) ?? [],
     closedReason,
     command,
   };

@@ -1475,3 +1475,566 @@ input:focus {
 .ticket button.submit-sell {
   color: #fff;
 }
+
+/* ---------- logo and brand ---------- */
+
+.logo {
+  width: auto;
+  height: auto;
+  background: none;
+  border-radius: 0;
+  margin: 0 auto 18px;
+  filter: drop-shadow(0 6px 14px rgba(59, 130, 246, 0.35));
+}
+
+.logo svg {
+  display: block;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  min-width: 0;
+}
+
+.brand-link {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.wordmark {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.wordmark span {
+  margin-left: 2px;
+  font-weight: 500;
+  color: #7fb0ff;
+}
+
+.brand-tag {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.logo-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-lockup .wordmark {
+  font-size: 24px;
+}
+
+.boot-message .logo-lockup {
+  margin-bottom: 16px;
+}
+
+/* ---------- broker-style details ---------- */
+
+.exchange-tag {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+
+.bid-text {
+  color: #6aa9f0;
+}
+
+.ask-text {
+  color: #ff7a77;
+}
+
+.stat-rows {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-rows > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid #161c26;
+}
+
+.stat-rows > div:last-child {
+  border-bottom: 0;
+}
+
+.stat-rows dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.stat-rows .label {
+  font-size: 13px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.stat-group {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+}
+
+.stat-group h4 {
+  margin: 0 0 8px;
+}
+
+.stat-group h4 .label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #aab4c3;
+}
+
+.full-row {
+  grid-column: 1 / -1;
+}
+
+.trend-note {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
+.perf-table td,
+.perf-table th {
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.overview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.overview-about {
+  margin: 0;
+  line-height: 1.6;
+  color: #c4ccd8;
+  max-width: 120ch;
+}
+
+/* market data panel */
+
+.market-data {
+  padding: 18px;
+}
+
+.bid-ask {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bid-ask > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+
+.bid-ask .bid {
+  border-left: 3px solid #3b82f6;
+}
+
+.bid-ask .ask {
+  border-right: 3px solid #e5484d;
+  align-items: flex-end;
+}
+
+.bid-ask .spread {
+  align-items: center;
+  background: transparent;
+}
+
+.bid-ask strong {
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.bid-ask .bid strong {
+  color: #6aa9f0;
+}
+
+.bid-ask .ask strong {
+  color: #ff7a77;
+}
+
+.course-title {
+  margin-top: 16px;
+}
+
+.course-of-sales {
+  max-height: 300px;
+  overflow-y: auto;
+  margin: 0 -6px;
+}
+
+.course-of-sales th {
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+}
+
+/* dividends */
+
+.div-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 140px;
+  padding: 8px 0 22px;
+  margin-bottom: 8px;
+}
+
+.div-bar {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.div-bar i {
+  display: block;
+  width: 100%;
+  max-width: 26px;
+  border-radius: 4px 4px 0 0;
+  background: linear-gradient(180deg, #4f8ff0, #3566c4);
+}
+
+.div-bar:hover i {
+  background: #7fb0ff;
+}
+
+.div-bar span {
+  position: absolute;
+  bottom: -18px;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* analysts */
+
+.rating-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 6px 0 18px;
+}
+
+.rating-badge {
+  padding: 6px 14px;
+  border-radius: 9px;
+  font-size: 16px;
+  font-weight: 800;
+  background: var(--panel);
+  border: 1px solid var(--border-strong);
+}
+
+.rating-badge.r-strong-buy,
+.rating-badge.r-buy {
+  background: rgba(38, 166, 154, 0.16);
+  border-color: rgba(38, 166, 154, 0.4);
+  color: #39c2b3;
+}
+
+.rating-badge.r-hold {
+  background: rgba(245, 165, 36, 0.14);
+  border-color: rgba(245, 165, 36, 0.4);
+  color: #f5b54a;
+}
+
+.rating-badge.r-underperform,
+.rating-badge.r-sell,
+.rating-badge.r-strong-sell {
+  background: rgba(239, 83, 80, 0.15);
+  border-color: rgba(239, 83, 80, 0.4);
+  color: #ff6b68;
+}
+
+.rating-track,
+.target-track {
+  position: relative;
+  height: 8px;
+  border-radius: 4px;
+}
+
+.rating-track {
+  background: linear-gradient(90deg, #26a69a, #8bc34a, #f5a524, #ef7a50, #ef5350);
+}
+
+.rating-track i,
+.target-track i {
+  position: absolute;
+  top: -5px;
+  width: 4px;
+  height: 18px;
+  margin-left: -2px;
+  border-radius: 2px;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--panel-2);
+}
+
+.rating-labels,
+.target-legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.target-range {
+  margin-top: 16px;
+}
+
+.target-track {
+  background: var(--border-strong);
+}
+
+.target-track i.mean {
+  background: #f5b54a;
+}
+
+.target-track i.now {
+  background: #fff;
+}
+
+.target-legend .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin: 0 3px 0 8px;
+  border-radius: 50%;
+}
+
+.target-legend .dot.now {
+  background: #fff;
+}
+
+.target-legend .dot.mean {
+  background: #f5b54a;
+}
+
+/* company */
+
+.company-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.company-facts .company-summary {
+  margin: 0;
+  line-height: 1.65;
+  color: #c4ccd8;
+  max-width: 120ch;
+}
+
+.company-facts .links {
+  display: inline-flex;
+  gap: 12px;
+}
+
+.company-facts a,
+.company-facts button.link {
+  color: #7fb0ff;
+}
+
+.company-facts button.link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ownership-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  margin-top: 12px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.ownership-bar .inst {
+  background: #3987e5;
+}
+
+.ownership-bar .ins {
+  background: #c98500;
+}
+
+.ownership-bar .rest {
+  background: #3a4453;
+}
+
+.officers {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.officers li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 9px 0;
+  border-bottom: 1px solid #161c26;
+}
+
+.officers li:last-child {
+  border-bottom: 0;
+}
+
+.officers .muted {
+  font-size: 12px;
+}
+
+/* ---------- general polish ---------- */
+
+.panel-title .label {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.stock-details .page-tabs {
+  overflow-x: auto;
+}
+
+.key-stats {
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+}
+
+.data-table td.strong,
+.data-table .strong {
+  font-weight: 700;
+}
+
+@media (max-width: 1100px) {
+  .topbar-left {
+    gap: 14px;
+  }
+
+  .brand-tag {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .brand-link {
+    display: none;
+  }
+}
+
+/* ---------- layout fixes ---------- */
+
+/* Tooltips exist only while shown, so hidden ones can't widen the page. */
+.info::after {
+  display: none;
+}
+
+.info:hover::after,
+.info:focus::after {
+  display: block;
+}
+
+/* Tips near the right edge open leftwards. */
+.key-stat:nth-last-child(-n + 2) .info::after,
+.stock-side .info::after,
+.portfolio-side .info::after,
+.summary-item:last-child .info::after,
+.stat-rows .info::after {
+  left: auto;
+  right: -8px;
+  transform: none;
+}
+
+.shell-main {
+  overflow-x: clip;
+}
+
+/* The chart grows to match the column beside it, so there's no empty gap under it. */
+.stock-grid-main {
+  align-items: stretch;
+}
+
+.chart-panel {
+  height: auto;
+  min-height: clamp(440px, calc(100vh - 330px), 980px);
+}
+
+.chart-panel:has(.panes-1) {
+  height: auto;
+  min-height: clamp(560px, calc(100vh - 230px), 1100px);
+}
+
+.chart-panel:has(.panes-2) {
+  height: auto;
+  min-height: clamp(680px, calc(100vh - 130px), 1220px);
+}
+
+.chart-panel .price-chart {
+  min-height: 380px;
+}
+
+.stock-side {
+  position: static;
+}
+
+.page-tabs {
+  scrollbar-width: none;
+}
+
+.page-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* The chart's own content mustn't push its height (it would grow with every resize). */
+.chart-panel {
+  contain: size;
+}
+
+.course-of-sales {
+  max-height: 240px;
+}
