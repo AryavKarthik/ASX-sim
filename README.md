@@ -20,15 +20,18 @@ Then you review every trade with a journal, performance analytics and a Claude-p
 coach that challenges your reasoning instead of handing out tips. A separate swing-practice
 mode lets you trade through months of daily prices in an evening.
 
-> **Status:** v1.0. Everything on the [roadmap](#roadmap) for the planned three-week build
-> is done. It is a personal learning tool: simulated money only, and nothing here is
-> financial advice.
+> **Status:** v1.1 ([releases](https://github.com/AryavKarthik/ASX-sim/releases)). The
+> planned three-week build is complete, plus broker-style stock pages, chart drawing tools
+> and a professional redesign. It is a personal learning tool: simulated money only, and
+> nothing here is financial advice.
 
 ![Home: the ASX 200, your account, today's movers and your watchlist with trend lines](docs/images/home.jpg)
 
-| A stock's chart and order ticket | Portfolio: positions, P&L and allocation |
+| A stock: chart, order ticket and market data | Portfolio: today's P&L, positions and allocation |
 |---|---|
-| ![A stock page's 1-minute chart with VWAP, and the order ticket](docs/images/stock.png) | ![Portfolio summary, positions table with Trade buttons, and allocation](docs/images/portfolio.png) |
+| ![A stock page's 1-minute chart with VWAP, the order ticket and the market-data panel](docs/images/stock.png) | ![Portfolio summary, positions with day change and weight, and allocation](docs/images/portfolio.png) |
+
+![Watchlist: last price, bid and ask, change, day range, volume and today's trend](docs/images/watchlist.jpg)
 
 *Screenshots use invented sample prices in demo mode (see [Market data and licensing](#market-data-and-licensing)).*
 
@@ -50,18 +53,25 @@ running 20 minutes behind.**
 
 ## Features
 
-**A clear, page-based interface**, in the spirit of beginner-friendly broker redesigns:
-- a sidebar with **Home**, **Watchlist**, **Portfolio**, **Coach**, **Practice** and **Replay**, a stock search in the top bar, and the market's phase, delayed clock and your equity always visible,
+**A clear, page-based interface** that follows broker-platform conventions (neutral surfaces, one accent colour, aligned figures, subtle motion):
+- a sidebar with **Home**, **Watchlist**, **Portfolio**, **Coach**, **Practice** and **Replay**, a stock search in the top bar, and an ASX 200 ticker, the market's phase, the delayed clock and your equity always visible,
 - **a page for every stock** (`#/stock/BHP`), with what a broker shows:
   - price, change, bid and ask, and trends from today to 3 years with the 52-week range,
   - a large chart, the order ticket, and a market-data panel: bid/ask/spread, VWAP, turnover
-    and a live **course of sales** (each trade's time, price and size),
+    and a live **course of sales** (each trade's time, price and size). Yahoo sends bid and
+    ask only occasionally; when they're missing or stale the app shows the one-tick estimate
+    the simulator fills against, labelled "est.",
   - tabs for **Overview** (trading, valuation, technicals with 50/200-day averages, and
     performance against the ASX 200), **Financials** (income, margins, balance sheet),
     **Dividends** (yields, payout and payment history), **Analysts** (consensus rating and
     price targets), **Company** (profile, ownership, management) and your activity,
 - **Portfolio**: equity, **today's P&L** (overnight shares from yesterday's close, today's buys from their cost), total, unrealised and realised P&L, cash and buying power; positions with day change, cost base, weight and a Trade button; orders, history, journal, performance and allocation,
-- a **Trade** panel that slides in from any watchlist or portfolio row, and an info tip on every piece of jargon.
+- **Watchlist**: last price, bid and ask, change, a day-range bar, volume and today's trend line,
+- a **Trade** panel that slides in from any watchlist or portfolio row,
+- jargon explains itself: terms like P/E or VWAP have a dotted underline with a plain-English
+  tip on hover,
+- subtle motion: prices flash green or red as they move, pages fade in, data loads behind
+  shimmer placeholders (all switched off if your system asks for reduced motion).
 
 **Core: live day trading on delayed data**
 - A streaming feed of delayed prices, updated on every new price (not once a minute),
@@ -94,7 +104,7 @@ running 20 minutes behind.**
     before you buy,
   - review each trade (followed the plan?, what went well, what to improve, emotions, rating),
   - each trade's **R-multiple** (P&L in units of the risk you planned) is worked out for you.
-- **Performance analytics** (the Performance view):
+- **Performance analytics** (Portfolio → Performance):
   - equity curve against the ASX 200 rescaled to your starting cash. The index never uses
     data past the market clock, so a demo can't leak the rest of the day,
   - net P&L and return vs the ASX 200, win rate, profit factor, payoff ratio, expectancy,
@@ -102,11 +112,10 @@ running 20 minutes behind.**
     gross profit,
   - results by setup, by time of day and by stock, and a discipline check comparing trades
     where you followed your plan with trades where you didn't.
-- **Company pages** (the Company view): what the business does, its sector and size;
-  market cap, P/E, forward P/E, dividend yield and price to book, worked out from the price
-  on screen so they move with it; revenue, profit, margins, debt and payout ratio; the
-  52-week range and trailing returns. Every figure has a plain-English explanation on hover.
-- **AI coach (Claude)** in the Coach view ([ADR 0010](docs/adr/0010-ai-coach.md)):
+- **Company data** on each stock page: valuation ratios (market cap, P/E, yield, price to
+  book) are worked out from the price on screen, so they move with it and a replay never sees
+  ratios built from a later price; dividend history stops before the session day.
+- **AI coach (Claude)** on the Coach page ([ADR 0010](docs/adr/0010-ai-coach.md)):
   - ask anything about trading, with replies streamed as they are written. The coach sees
     your account, positions, open orders, journal and statistics, and the stock you're
     watching,
@@ -169,6 +178,18 @@ Key design decisions are recorded as [Architecture Decision Records](docs/adr/):
 | [0010](docs/adr/0010-ai-coach.md) | The AI coach teaches and reviews; it never tips |
 | [0011](docs/adr/0011-swing-practice-on-daily-bars.md) | Swing practice on daily bars |
 
+## Built with
+
+- **Backend:** Python 3.12, FastAPI (REST and WebSocket), pandas, Parquet and DuckDB for
+  bars, `exchange_calendars` for ASX trading days, `yfinance` for delayed prices, the
+  Anthropic SDK for the coach. Money is `Decimal` throughout. Checked with ruff, strict mypy
+  and pytest (with Hypothesis).
+- **Frontend:** React 19, TypeScript and Vite; TradingView Lightweight Charts with a custom
+  plugin layer for the drawing tools; one hand-written stylesheet as the design system;
+  Vitest for the maths.
+- **Tooling:** uv, GitHub Actions CI, pre-commit with a secret scanner, Conventional Commits,
+  and Architecture Decision Records.
+
 ## Market data and licensing
 
 ASX-sim's **code** is open source (MIT). **Market data is never committed or published.**
@@ -221,9 +242,10 @@ npm run dev
 Then open <http://localhost:5173>. On Windows, `scripts\dev.ps1` does all of this in one
 step. The API's interactive docs are at <http://127.0.0.1:8000/docs>.
 
-The app opens on the **Live market (delayed)** tab. During ASX trading hours (about 10:20am
-to 4:30pm Sydney time with the delay) your watchlist streams live. Outside those hours it
-shows the last session, and **Try the demo** plays a recorded day as if it were live.
+The app opens on **Home**. During ASX trading hours (about 10:20am to 4:30pm Sydney time,
+with the delay) prices stream live. Outside those hours it shows the last session; open
+**Settings** (bottom of the sidebar) and choose **Try the demo** to play a recorded day as if
+it were live, with a separate practice account.
 
 **3. Switch on the AI coach (optional).** Create an API key at
 [console.anthropic.com](https://console.anthropic.com/) and set a monthly spend limit
@@ -245,9 +267,9 @@ outside the repository.
 | Build | | `npm run build` |
 
 CI runs all of these, plus a secret scan, on every pull request. The backend has over 300
-tests at about 90% coverage; none of them touch the network or need an API key (Yahoo and Claude sit behind small
-interfaces with stand-ins). The frontend tests cover the indicator, ratio and
-drawing-placement maths.
+tests at about 90% coverage; none of them touch the network or need an API key (Yahoo and
+Claude sit behind small interfaces with stand-ins). The frontend's 45 tests cover the
+indicator, valuation-ratio, drawing-placement, bid/ask-estimate and day-P&L maths.
 
 Pre-commit hooks run these checks, plus a secret scanner, on every commit:
 `uv tool install pre-commit && pre-commit install`.
@@ -272,9 +294,13 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 3, part 4:** portfolio polish: sample-data generator, screenshots, architecture and docs → `v1.0`
 - [x] **After v1.0:** drawing tools on charts (horizontal lines, trend lines, rays)
 - [x] **After v1.0:** redesigned interface: sidebar pages, a page per stock with its trends, a Portfolio page, a slide-in trade panel, full-width layout
+- [x] **After v1.0:** broker-depth stock pages (course of sales, bid/ask, overview, financials, dividends, analysts, ownership), today's P&L, a new logo
 - [x] **After v1.0:** professional visual pass: neutral palette, Inter, flat sections, dotted-underline term tips, price flashes and subtle motion (respects reduced-motion)
+- [x] **Housekeeping → `v1.1`:** Block's ASX code corrected (XYZ), four delisted ASX 200 members removed, the three stylesheets merged into one design system with dead rules removed, screenshots and docs refreshed, the coach's full review verified against the real API
+- [ ] **Next:** risk tools (a position-size calculator on the ticket, bracket orders, price alerts including on drawn lines), discipline guardrails (daily loss limit, trade limit), a market scanner, trade replay from the journal
+- [ ] **Quality:** automated browser tests in CI, a tested phone layout, keyboard shortcuts
 - [ ] **Secondary:** trading inside past-day replay
-- [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits, ASX options, a refreshed ASX 200 list (a few codes have changed since it was compiled)
+- [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits in the account, ASX options, the four delisted ASX 200 members' replacements once a current constituent list can be confirmed
 
 ## License
 
