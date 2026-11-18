@@ -16,6 +16,8 @@ export const REFRESH_OPTIONS = [
   { ms: 30_000, label: "30s" },
 ];
 const DEFAULT_REFRESH = 30_000;
+/** The S&P/ASX 200, streamed always so the Home page can show the market. */
+export const INDEX = "XJO";
 
 type CandleListener = (symbol: string, candle: Bar) => void;
 
@@ -118,9 +120,10 @@ export function MarketProvider({ defaults, children }: { defaults: Defaults; chi
     if (focus) setLastViewed(focus);
   }, [focus]);
 
-  // What to stream: the stock on screen, then holdings, then the watchlist (the server takes 20).
+  // What to stream: the stock on screen, the ASX 200 (Home always shows it), then holdings,
+  // then the watchlist (the server takes 20).
   const streamed = useMemo(() => {
-    const all = [...(focus ? [focus] : []), ...positionSymbols, ...watchlist];
+    const all = [...(focus ? [focus] : []), INDEX, ...positionSymbols, ...watchlist];
     return [...new Set(all)].slice(0, defaults.max_symbols);
   }, [focus, positionSymbols, watchlist, defaults.max_symbols]);
 

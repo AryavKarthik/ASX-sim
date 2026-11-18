@@ -1,4 +1,4 @@
-import { priceOf, useMarket } from "../app/market";
+import { INDEX, priceOf, useMarket } from "../app/market";
 import { stockPath } from "../app/router";
 import { Change, Label, Price, Sparkline, money, pct, tone } from "../app/ui";
 import { formatDay } from "../format";
@@ -10,8 +10,10 @@ export function HomePage() {
     const bars = feed.candlesFor(symbol);
     return { symbol, bars, ...priceOf(feed.quotes[symbol], bars) };
   });
-  const index = rows.find((r) => r.symbol === "XJO");
-  const stocks = rows.filter((r) => r.symbol !== "XJO");
+  // Streamed whether or not it's on your watchlist.
+  const indexBars = feed.candlesFor(INDEX);
+  const index = { bars: indexBars, ...priceOf(feed.quotes[INDEX], indexBars) };
+  const stocks = rows.filter((r) => r.symbol !== INDEX);
   const moving = stocks.filter((r) => r.pct != null);
   const gainers = [...moving].sort((a, b) => (b.pct ?? 0) - (a.pct ?? 0)).filter((r) => (r.pct ?? 0) > 0).slice(0, 4);
   const losers = [...moving].sort((a, b) => (a.pct ?? 0) - (b.pct ?? 0)).filter((r) => (r.pct ?? 0) < 0).slice(0, 4);
