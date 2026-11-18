@@ -3,6 +3,11 @@
 For v1 this is the S&P/ASX 200 plus a few benchmarks. The constituent list is a snapshot
 (index membership changes each quarter), so it is stored as a CSV with an "as of" date and
 refreshed by hand.
+
+Checked against Yahoo on 18 Nov 2026: four members of the April snapshot no longer trade
+(no prices for a month, consistent with being delisted) and were removed, so the list
+holds 196 stocks; Block's code was corrected from XYX to XYZ. Their index replacements
+aren't added until a current constituent list can be confirmed.
 """
 
 from __future__ import annotations
@@ -15,6 +20,8 @@ from importlib import resources
 
 ASX200_AS_OF = date(2026, 4, 5)
 ASX200_SOURCE = "https://en.wikipedia.org/wiki/S%26P/ASX_200 (constituents table)"
+# In the snapshot but no longer trading (checked 2026-11-18), so left out of the CSV.
+ASX200_DELISTED = ("ASK", "IFL", "NSR", "QUB")
 
 # ASX codes are 3 characters of letters/digits (e.g. BHP, S32, 360, 4DX).
 _ASX_CODE = re.compile(r"^[A-Z0-9]{3}$")

@@ -20,7 +20,6 @@ APE,Eagers Automotive,Consumer Discretionary
 ARB,ARB Corporation,Consumer Discretionary
 ARG,Argo Investments,Financials
 ASB,Austal,Industrials
-ASK,Abacus Storage King,Real Estate
 ASX,ASX,Financials
 AUB,AUB Group,Financials
 AZJ,Aurizon,Industrials
@@ -84,7 +83,6 @@ HDN,HomeCo Daily Needs REIT,Real Estate
 HUB,HUB24,Financials
 HVN,Harvey Norman,Consumer Discretionary
 IAG,Insurance Australia Group,Financials
-IFL,Insignia Financial,Financials
 IFT,Infratil,Financials
 IGO,IGO,Materials
 ILU,Iluka Resources,Materials
@@ -115,7 +113,6 @@ NEM,Newmont,Materials
 NHC,New Hope,Energy
 NHF,Nib,Financials
 NIC,Nickel Industries,Materials
-NSR,National Storage,Real Estate
 NST,Northern Star Resources,Materials
 NWH,NRW Holdings,Industrials
 NWL,Netwealth Group,Financials
@@ -138,7 +135,6 @@ PRU,Perseus Mining,Materials
 PXA,Pexa Group,Real Estate
 QAN,Qantas,Industrials
 QBE,QBE Insurance,Financials
-QUB,Qube Holdings,Industrials
 RDX,Redox,Industrials
 REA,REA Group,Communication Services
 REG,Regis Healthcare,Healthcare
@@ -195,7 +191,7 @@ WOR,Worley,Energy
 WOW,Woolworths Group,Consumer Staples
 WTC,Wisetech Global,Information Technology
 XRO,Xero,Information Technology
-XYX,"Block, Inc.",Financials
+XYZ,"Block, Inc.",Financials
 YAL,Yancoal Australia,Materials
 ZIM,Zimplats Holdings,Materials
 ZIP,Zip,Financials

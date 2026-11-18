@@ -2,15 +2,24 @@ import re
 
 import pytest
 
-from asxsim.data.universe import BENCHMARKS, load_asx200, recording_universe, yahoo_symbol
+from asxsim.data.universe import (
+    ASX200_DELISTED,
+    BENCHMARKS,
+    load_asx200,
+    recording_universe,
+    yahoo_symbol,
+)
 
 
-def test_asx200_snapshot_has_200_unique_valid_codes() -> None:
+def test_asx200_snapshot_has_unique_valid_codes() -> None:
     securities = load_asx200()
     codes = [s.code for s in securities]
 
-    assert len(securities) == 200
-    assert len(set(codes)) == 200
+    # The April 2026 snapshot of 200, less the members that have since delisted.
+    assert len(securities) == 200 - len(ASX200_DELISTED)
+    assert len(set(codes)) == len(codes)
+    assert not set(ASX200_DELISTED) & set(codes)
+    assert codes == sorted(codes)
     assert all(re.fullmatch(r"[A-Z0-9]{3}", c) for c in codes)
     assert all(s.name and s.sector for s in securities)
 
@@ -20,7 +29,8 @@ def test_asx200_contains_known_names() -> None:
 
     assert by_code["BHP"].sector == "Materials"
     assert by_code["CBA"].name == "Commonwealth Bank"
-    assert by_code["XYX"].name == "Block, Inc."  # quoted comma survives CSV parsing
+    assert by_code["XYZ"].name == "Block, Inc."  # quoted comma survives CSV parsing
+    assert "XYX" not in by_code  # the old, mistyped code
 
 
 @pytest.mark.parametrize(
@@ -40,6 +50,6 @@ def test_yahoo_symbol_rejects_invalid_codes(bad: str) -> None:
 def test_recording_universe_includes_benchmarks() -> None:
     universe = recording_universe()
 
-    assert len(universe) == 200 + len(BENCHMARKS)
+    assert len(universe) == 200 - len(ASX200_DELISTED) + len(BENCHMARKS)
     assert universe["XJO"] == "^AXJO"
     assert universe["BHP"] == "BHP.AX"
