@@ -1,6 +1,6 @@
 import { INDEX, priceOf, useMarket } from "../app/market";
 import { stockPath } from "../app/router";
-import { Change, Label, Price, Sparkline, money, pct, tone } from "../app/ui";
+import { Change, FlashPrice, Label, Price, Sparkline, money, pct, tone } from "../app/ui";
 import { formatDay } from "../format";
 
 /** The dashboard: the market today, your account, and your watchlist at a glance. */
@@ -112,7 +112,7 @@ export function HomePage() {
                   </div>
                   <div className="right">
                     <strong>
-                      <Price value={r.price} />
+                      <FlashPrice value={r.price} />
                     </strong>
                     <span className={`change ${tone(r.pct)}`}>{pct(r.pct)}</span>
                   </div>

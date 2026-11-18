@@ -19,8 +19,8 @@ import { DrawingToolbar } from "../drawing/DrawingToolbar";
 import { indexMapper } from "../drawing/geometry";
 import { sma } from "../live/indicators";
 
-const UP = "#26a69a";
-const DOWN = "#ef5350";
+const UP = "#089981";
+const DOWN = "#f23645";
 // Same validated categorical slots as the live chart's moving averages.
 const SMA20 = "#c98500";
 const SMA50 = "#9085e9";
@@ -62,13 +62,14 @@ export function DailyChart({ bars, fills, resetKey, drawingScope }: Props) {
       autoSize: true,
       layout: {
         background: { color: "transparent" },
-        textColor: "#9aa4b2",
+        textColor: "#7d848e",
         fontFamily: "Inter, system-ui, sans-serif",
+        fontSize: 11,
         attributionLogo: true, // TradingView attribution, required by the licence
       },
-      grid: { vertLines: { color: "#1c2430" }, horzLines: { color: "#1c2430" } },
-      rightPriceScale: { borderColor: "#2a3441" },
-      timeScale: { borderColor: "#2a3441", timeVisible: false },
+      grid: { vertLines: { color: "#16191d" }, horzLines: { color: "#16191d" } },
+      rightPriceScale: { borderColor: "#24282e" },
+      timeScale: { borderColor: "#24282e", timeVisible: false },
     });
     const candles = chart.addSeries(CandlestickSeries, {
       upColor: UP,

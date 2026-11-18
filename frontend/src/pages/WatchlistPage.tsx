@@ -2,7 +2,7 @@ import { type FormEvent, useState } from "react";
 
 import { priceOf, useMarket } from "../app/market";
 import { go, stockPath } from "../app/router";
-import { Icon, Price, Sparkline, compactNumber, pct, tone } from "../app/ui";
+import { FlashPrice, Icon, Sparkline, compactNumber, pct, tone } from "../app/ui";
 import { touchFor } from "../stock/MarketData";
 
 type SortKey = "symbol" | "price" | "pct" | "volume";
@@ -111,7 +111,7 @@ export function WatchlistPage() {
                     <span className="cell-name">{names[r.symbol]}</span>
                   </td>
                   <td className="num strong">
-                    <Price value={r.price} />
+                    <FlashPrice value={r.price} />
                   </td>
                   <td className="num bid-text" title={touchFor(r.quote, r.price).estimated ? "Estimated from the last trade" : undefined}>
                     {r.symbol === "XJO" || touchFor(r.quote, r.price).bid == null ? "—" : touchFor(r.quote, r.price).bid?.toFixed((r.price ?? 0) < 2 ? 3 : 2)}

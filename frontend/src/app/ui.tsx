@@ -1,6 +1,6 @@
 // Small shared pieces of the interface: icons, sparklines, info tips and number formatting.
 
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import type { Bar } from "../api";
 import { formatPrice } from "../format";
@@ -63,13 +63,51 @@ export function Info({ text }: { text: string }) {
   );
 }
 
+/** A small label. With a tip, the term gets a dotted underline and explains itself on hover. */
 export function Label({ children, tip }: { children: ReactNode; tip?: string }) {
+  if (!tip) return <span className="label">{children}</span>;
   return (
-    <span className="label">
+    <span className="label has-tip" tabIndex={0} data-tip={tip} aria-label={typeof children === "string" ? `${children}: ${tip}` : tip}>
       {children}
-      {tip && <Info text={tip} />}
     </span>
   );
+}
+
+// ---------- motion ----------
+
+/**
+ * A class that briefly flashes green or red when a number goes up or down, as broker
+ * screens do. Alternates between two identical animations so back-to-back moves re-trigger.
+ */
+export function useFlash(value: number | null | undefined): string {
+  const previous = useRef(value);
+  const count = useRef(0);
+  const [flash, setFlash] = useState("");
+  useEffect(() => {
+    const before = previous.current;
+    previous.current = value;
+    if (before == null || value == null || before === value) return;
+    count.current += 1;
+    setFlash(`${value > before ? "flash-up" : "flash-down"}-${count.current % 2}`);
+    const timer = window.setTimeout(() => setFlash(""), 900);
+    return () => window.clearTimeout(timer);
+  }, [value]);
+  return flash;
+}
+
+/** A price that flashes when it changes. */
+export function FlashPrice({ value, className = "" }: { value: number | null; className?: string }) {
+  const flash = useFlash(value);
+  return (
+    <span className={`flash-target ${flash} ${className}`}>
+      <Price value={value} />
+    </span>
+  );
+}
+
+/** A shimmering placeholder shown while data loads. */
+export function Skeleton({ width = "100%", height = 14, className = "" }: { width?: number | string; height?: number; className?: string }) {
+  return <span className={`skeleton ${className}`} style={{ width, height }} aria-hidden />;
 }
 
 // ---------- sparkline ----------
@@ -90,7 +128,7 @@ export function Sparkline({ bars, height = 32, className = "" }: { bars: Bar[]; 
     <svg className={`sparkline ${className}`} viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ height }} aria-hidden>
       <defs>
         <linearGradient id={`fade-${rising ? "up" : "down"}`} x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor={colour} stopOpacity="0.25" />
+          <stop offset="0%" stopColor={colour} stopOpacity="0.14" />
           <stop offset="100%" stopColor={colour} stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -106,13 +144,7 @@ export function Sparkline({ bars, height = 32, className = "" }: { bars: Bar[]; 
 export function LogoMark({ size = 36 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
-      <defs>
-        <linearGradient id="logo-fill" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#3b82f6" />
-          <stop offset="1" stopColor="#6366f1" />
-        </linearGradient>
-      </defs>
-      <rect width="32" height="32" rx="8" fill="url(#logo-fill)" />
+      <rect width="32" height="32" rx="7" fill="#2f6bff" />
       <g stroke="#fff" strokeWidth="1.6" strokeLinecap="round">
         <line x1="9" y1="15" x2="9" y2="24" />
         <line x1="16" y1="10" x2="16" y2="22" />

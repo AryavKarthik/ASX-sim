@@ -1,5 +1,5 @@
 import type { Bar } from "../api";
-import { Label, compactNumber, money } from "../app/ui";
+import { Label, compactNumber } from "../app/ui";
 import { formatPrice } from "../format";
 import { estimatedTouch } from "../live/ticks";
 import type { Quote, TradePrint } from "../live/types";
@@ -101,7 +101,6 @@ export function MarketData({ quote, bars, prints, price }: { quote: Quote | unde
                 <th>Time</th>
                 <th className="num">Price</th>
                 <th className="num">Shares</th>
-                <th className="num">Value</th>
               </tr>
             </thead>
             <tbody>
@@ -113,7 +112,6 @@ export function MarketData({ quote, bars, prints, price }: { quote: Quote | unde
                     <td className="muted">{sydneyClock(p.time)}</td>
                     <td className={`num ${move}`}>{formatPrice(p.price)}</td>
                     <td className="num">{p.volume.toLocaleString("en-AU")}</td>
-                    <td className="num muted">{money(p.price * p.volume).replace(".00", "")}</td>
                   </tr>
                 );
               })}

@@ -43,13 +43,14 @@ export function EquityChart({ curve, benchmark, labels = ASX200, smooth = false 
       autoSize: true,
       layout: {
         background: { color: "transparent" },
-        textColor: "#8b96a5",
+        textColor: "#7d848e",
         fontFamily: "Inter, system-ui, sans-serif",
+        fontSize: 11,
         attributionLogo: true,
       },
-      grid: { vertLines: { visible: false }, horzLines: { color: "#1c2430" } },
-      rightPriceScale: { borderColor: "#2a3441" },
-      timeScale: { borderColor: "#2a3441", timeVisible: true, secondsVisible: false },
+      grid: { vertLines: { visible: false }, horzLines: { color: "#16191d" } },
+      rightPriceScale: { borderColor: "#24282e" },
+      timeScale: { borderColor: "#24282e", timeVisible: true, secondsVisible: false },
       localization: {
         priceFormatter: (p: number) => p.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 }),
       },
