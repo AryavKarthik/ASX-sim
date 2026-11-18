@@ -171,7 +171,11 @@ async def company_page(
         daily = await asyncio.to_thread(history.history, code, "1d", until)
     except Exception as exc:  # Yahoo unavailable
         raise HTTPException(status_code=502, detail=f"Couldn't load company data: {exc}") from exc
-    return {**profile, "price": company.price_stats(daily)}
+    try:
+        paid = await asyncio.to_thread(company.dividends, code, until)
+    except Exception:  # dividends are a nice-to-have: show the rest without them
+        paid = []
+    return {**profile, "price": company.price_stats(daily), "dividends": paid}
 
 
 @router.get("/defaults")

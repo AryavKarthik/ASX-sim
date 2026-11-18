@@ -52,8 +52,15 @@ running 20 minutes behind.**
 
 **A clear, page-based interface**, in the spirit of beginner-friendly broker redesigns:
 - a sidebar with **Home**, **Watchlist**, **Portfolio**, **Coach**, **Practice** and **Replay**, a stock search in the top bar, and the market's phase, delayed clock and your equity always visible,
-- **a page for every stock** (`#/stock/BHP`): price and change, its trends (today, 1 week to 3 years, 52-week range), key statistics, a large chart, the order ticket, company details and your activity in it,
-- **Portfolio**: equity, total, unrealised and realised P&L, cash and buying power, a positions table with a Trade button on every row, orders, history, journal, performance and allocation,
+- **a page for every stock** (`#/stock/BHP`), with what a broker shows:
+  - price, change, bid and ask, and trends from today to 3 years with the 52-week range,
+  - a large chart, the order ticket, and a market-data panel: bid/ask/spread, VWAP, turnover
+    and a live **course of sales** (each trade's time, price and size),
+  - tabs for **Overview** (trading, valuation, technicals with 50/200-day averages, and
+    performance against the ASX 200), **Financials** (income, margins, balance sheet),
+    **Dividends** (yields, payout and payment history), **Analysts** (consensus rating and
+    price targets), **Company** (profile, ownership, management) and your activity,
+- **Portfolio**: equity, **today's P&L** (overnight shares from yesterday's close, today's buys from their cost), total, unrealised and realised P&L, cash and buying power; positions with day change, cost base, weight and a Trade button; orders, history, journal, performance and allocation,
 - a **Trade** panel that slides in from any watchlist or portfolio row, and an info tip on every piece of jargon.
 
 **Core: live day trading on delayed data**

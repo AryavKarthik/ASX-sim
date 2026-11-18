@@ -288,6 +288,7 @@ class LiveHub:
                 "live": update.live,
                 "quote": quote_json(update.quote),
                 "candle": None if update.candle is None else update.candle.to_json(),
+                "volume": update.volume,  # shares traded in this update (course of sales)
             },
             symbol=update.symbol,
         )

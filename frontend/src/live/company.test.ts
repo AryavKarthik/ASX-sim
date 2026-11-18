@@ -18,6 +18,15 @@ const BHP: Fundamentals = {
   ex_dividend_date: null,
   reporting_currency: "USD",
   trading_currency: "AUD",
+  forward_dividend_per_share: null,
+  five_year_average_yield: null,
+  operating_margin: null,
+  gross_margin: null,
+  revenue_growth: null,
+  earnings_growth: null,
+  total_cash: null,
+  total_debt: null,
+  current_ratio: null,
 };
 
 describe("ratios from the price on screen", () => {

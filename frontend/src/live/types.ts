@@ -231,11 +231,14 @@ export type LiveMessage =
       symbols: Record<string, { quote: Quote | null; candles: Bar[] }>;
       account: AccountView;
     }
-  | { type: "tick"; symbol: string; live: boolean; quote: Quote; candle: Bar | null }
+  | { type: "tick"; symbol: string; live: boolean; quote: Quote; candle: Bar | null; volume?: number }
   | { type: "account"; account: AccountView; fills: FillView[] }
   | CommandResult
   | { type: "coach"; request_id: string; delta: string }
   | ({ type: "status" } & LiveStatus);
+
+/** One trade in the course of sales: when, at what price, how many shares. */
+export type TradePrint = { time: number; price: number; volume: number };
 
 export type Defaults = {
   watchlist: string[];

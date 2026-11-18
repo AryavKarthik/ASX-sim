@@ -100,6 +100,45 @@ export function Sparkline({ bars, height = 32, className = "" }: { bars: Bar[]; 
   );
 }
 
+// ---------- logo ----------
+
+/** The ASX-sim mark: three rising candlesticks on a blue tile (same drawing as favicon.svg). */
+export function LogoMark({ size = 36 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden>
+      <defs>
+        <linearGradient id="logo-fill" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#3b82f6" />
+          <stop offset="1" stopColor="#6366f1" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="8" fill="url(#logo-fill)" />
+      <g stroke="#fff" strokeWidth="1.6" strokeLinecap="round">
+        <line x1="9" y1="15" x2="9" y2="24" />
+        <line x1="16" y1="10" x2="16" y2="22" />
+        <line x1="23" y1="6" x2="23" y2="19" />
+      </g>
+      <g fill="#fff">
+        <rect x="7" y="17" width="4" height="5" rx="1.2" />
+        <rect x="14" y="12.5" width="4" height="7" rx="1.2" />
+        <rect x="21" y="8" width="4" height="8.5" rx="1.2" />
+      </g>
+    </svg>
+  );
+}
+
+/** Mark plus wordmark: "ASX" in bold, "sim" lighter. */
+export function Logo({ size = 30 }: { size?: number }) {
+  return (
+    <span className="logo-lockup">
+      <LogoMark size={size} />
+      <span className="wordmark">
+        ASX<span>sim</span>
+      </span>
+    </span>
+  );
+}
+
 // ---------- icons (outline, 24px grid, in the style of Heroicons) ----------
 
 const PATHS: Record<string, string> = {

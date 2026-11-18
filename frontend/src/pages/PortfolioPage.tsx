@@ -1,3 +1,4 @@
+import { dayPnl } from "../app/dayPnl";
 import { useMarket } from "../app/market";
 import { go, stockPath } from "../app/router";
 import { Label, money, pct, tone } from "../app/ui";
@@ -37,9 +38,19 @@ export function PortfolioPage({ tab = "positions" }: { tab?: string }) {
     .map((p) => ({ symbol: p.symbol, value: Number(p.market_value ?? 0) }))
     .sort((a, b) => b.value - a.value);
   const cash = Number(account.cash);
+  // Today's P&L: how today's price moves changed the value of what you hold.
+  const dayChanges = account.positions.map((p) => dayPnl(p, feed.quotes[p.symbol], account.fills, feed.sessionDay)).filter((c): c is number => c != null);
+  const todayPnl = dayChanges.reduce((sum, c) => sum + c, 0);
 
   const stats: { label: string; value: string; className?: string; sub?: string; tip: string }[] = [
     { label: "Equity", value: money(account.equity), tip: "Everything your account is worth right now: cash plus the current value of your shares." },
+    {
+      label: "Today's P&L",
+      value: dayChanges.length ? money(todayPnl, true) : "—",
+      className: tone(todayPnl),
+      sub: dayChanges.length && equity ? `${pct((100 * todayPnl) / equity)} of equity` : undefined,
+      tip: "Profit or loss on your holdings today: shares held overnight are measured from yesterday's close, shares bought today from what you paid. Sales and brokerage aren't included.",
+    },
     {
       label: "Total P&L",
       value: money(account.net_pnl, true),
@@ -96,6 +107,8 @@ export function PortfolioPage({ tab = "positions" }: { tab?: string }) {
               onCancel={market.cancelOrder}
               onOrder={market.placeOrder}
               onTrade={(symbol, side) => market.trade(symbol, side)}
+              quotes={feed.quotes}
+              sessionDay={feed.sessionDay}
               journalOptions={defaults.journal}
               onJournalSave={market.saveJournal}
             />

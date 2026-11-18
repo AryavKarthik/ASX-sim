@@ -5,7 +5,7 @@ import { OrderTicket } from "../live/OrderTicket";
 import type { LiveStatus } from "../live/types";
 import { REFRESH_OPTIONS, priceOf, useMarket } from "./market";
 import { type Page, go, stockPath } from "./router";
-import { Change, Icon, Price, money, tone } from "./ui";
+import { Change, Icon, LogoMark, Price, money, tone } from "./ui";
 
 const NAV: { page: Page; path: string; label: string; icon: string }[] = [
   { page: "home", path: "/", label: "Home", icon: "home" },
@@ -24,7 +24,7 @@ export function Shell({ page, children }: { page: Page; children: ReactNode }) {
     <div className="shell">
       <nav className="sidebar" aria-label="Main">
         <a className="logo" href="#/" aria-label="ASX-sim home">
-          <span>A</span>
+          <LogoMark size={38} />
         </a>
         {NAV.map((n) => (
           <a key={n.page} href={`#${n.path}`} className={`nav-item ${active === n.page ? "active" : ""}`} aria-current={active === n.page ? "page" : undefined}>
@@ -50,7 +50,15 @@ function TopBar() {
   const account = feed.account;
   return (
     <header className="topbar">
-      <SymbolSearch />
+      <div className="topbar-left">
+        <a className="brand-link" href="#/" aria-label="ASX-sim home">
+          <span className="wordmark">
+            ASX<span>sim</span>
+          </span>
+          <span className="brand-tag">Trading simulator</span>
+        </a>
+        <SymbolSearch />
+      </div>
       <div className="topbar-right">
         <MarketStatus status={feed.status} connected={feed.connected} />
         {account && (
