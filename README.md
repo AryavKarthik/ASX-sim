@@ -272,6 +272,7 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **Week 3, part 4:** portfolio polish: sample-data generator, screenshots, architecture and docs → `v1.0`
 - [x] **After v1.0:** drawing tools on charts (horizontal lines, trend lines, rays)
 - [x] **After v1.0:** redesigned interface: sidebar pages, a page per stock with its trends, a Portfolio page, a slide-in trade panel, full-width layout
+- [x] **After v1.0:** professional visual pass: neutral palette, Inter, flat sections, dotted-underline term tips, price flashes and subtle motion (respects reduced-motion)
 - [ ] **Secondary:** trading inside past-day replay
 - [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits, ASX options, a refreshed ASX 200 list (a few codes have changed since it was compiled)
 

@@ -5,7 +5,7 @@
 import { type ReactNode, useState } from "react";
 
 import type { Bar } from "../api";
-import { Label, compactNumber, money, pct, tone } from "../app/ui";
+import { Label, Skeleton, compactNumber, money, pct, tone } from "../app/ui";
 import { formatPrice } from "../format";
 import { type Company, compact, ratios } from "../live/company";
 import type { AccountView, CommandResult, Quote } from "../live/types";
@@ -87,7 +87,21 @@ export function StockDetails(props: Props) {
           ))}
       </div>
       {props.companyError && tab !== "activity" && <p className="error small-text">Couldn't load company information: {props.companyError}</p>}
-      {!company && !props.companyError && tab !== "activity" && <p className="muted">Loading {props.symbol}…</p>}
+      {!company && !props.companyError && tab !== "activity" && (
+        <div className="stat-grid" aria-busy="true">
+          {[0, 1, 2, 3].map((g) => (
+            <div className="stat-group" key={g}>
+              <Skeleton width="40%" height={11} />
+              {[0, 1, 2, 3, 4, 5].map((r) => (
+                <div className="skeleton-row" key={r}>
+                  <Skeleton width="45%" height={12} />
+                  <Skeleton width="22%" height={12} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
       {company && tab === "overview" && <Overview {...props} company={company} />}
       {company && tab === "financials" && <Financials company={company} />}
       {company && tab === "dividends" && <Dividends company={company} price={props.price} />}

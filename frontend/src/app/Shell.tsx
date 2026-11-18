@@ -3,9 +3,9 @@ import { type FormEvent, type ReactNode, useEffect, useMemo, useRef, useState } 
 import { PHASE_HELP, PHASE_LABELS, clockTime, formatDay } from "../format";
 import { OrderTicket } from "../live/OrderTicket";
 import type { LiveStatus } from "../live/types";
-import { REFRESH_OPTIONS, priceOf, useMarket } from "./market";
+import { INDEX, REFRESH_OPTIONS, priceOf, useMarket } from "./market";
 import { type Page, go, stockPath } from "./router";
-import { Change, Icon, LogoMark, Price, money, tone } from "./ui";
+import { Change, FlashPrice, Icon, LogoMark, money, pct, tone, useFlash } from "./ui";
 
 const NAV: { page: Page; path: string; label: string; icon: string }[] = [
   { page: "home", path: "/", label: "Home", icon: "home" },
@@ -60,6 +60,7 @@ function TopBar() {
         <SymbolSearch />
       </div>
       <div className="topbar-right">
+        <IndexTicker />
         <MarketStatus status={feed.status} connected={feed.connected} />
         {account && (
           <a className="equity-chip" href="#/portfolio" title="Your account's total value: cash plus holdings. Click for your portfolio.">
@@ -134,6 +135,22 @@ function SymbolSearch() {
         </ul>
       )}
     </div>
+  );
+}
+
+/** The ASX 200 in the top bar, as broker sites show the main index. */
+function IndexTicker() {
+  const { feed } = useMarket();
+  const shown = priceOf(feed.quotes[INDEX], feed.candlesFor(INDEX));
+  const flash = useFlash(shown.price);
+  return (
+    <a className="index-ticker" href={`#${stockPath(INDEX)}`} title="S&P/ASX 200 index">
+      <span className="muted">ASX 200</span>
+      <strong className={`flash-target ${flash}`}>
+        {shown.price != null ? shown.price.toLocaleString("en-AU", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) : "—"}
+      </strong>
+      <span className={tone(shown.pct)}>{pct(shown.pct)}</span>
+    </a>
   );
 }
 
@@ -277,9 +294,7 @@ function TradeDrawer() {
           </button>
         </header>
         <div className="drawer-price">
-          <span className="big-price">
-            <Price value={shown.price} />
-          </span>
+          <FlashPrice value={shown.price} className="big-price" />
           <Change change={shown.change} percent={shown.pct} price={shown.price} />
         </div>
         <OrderTicket

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { INDEX, priceOf, useMarket } from "../app/market";
-import { Change, Icon, Label, Price, compactNumber, money, pct, tone } from "../app/ui";
+import { Change, FlashPrice, Icon, Label, Skeleton, compactNumber, money, pct, tone } from "../app/ui";
 import { PriceChart, type PriceChartHandle } from "../components/PriceChart";
 import { formatDay, formatPrice } from "../format";
 import { compact, rangePosition, ratios } from "../live/company";
@@ -125,9 +125,7 @@ export function StockPage({ symbol }: { symbol: string }) {
           </p>
         </div>
         <div className="stock-quote">
-          <span className="big-price">
-            <Price value={shown.price} />
-          </span>
+          <FlashPrice value={shown.price} className="big-price" />
           <Change change={shown.change} percent={shown.pct} price={shown.price} />
           <span className="muted small-text">
             {source.kind === "demo" ? "Demo replay" : "Delayed ~20 min"} · {quote ? `since ${quote.change_basis}` : "today"}
@@ -175,7 +173,14 @@ export function StockPage({ symbol }: { symbol: string }) {
             </div>
           </div>
         )}
-        {!week && !company.error && <span className="muted small-text">Loading trends…</span>}
+        {!week &&
+          !company.error &&
+          [0, 1, 2, 3, 4, 5, 6].map((i) => (
+            <div className="trend" key={i}>
+              <Skeleton width={48} height={10} />
+              <Skeleton width={56} height={18} />
+            </div>
+          ))}
       </section>
 
       <div className="stock-grid-main">

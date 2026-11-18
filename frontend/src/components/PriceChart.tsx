@@ -35,12 +35,12 @@ export type PriceChartHandle = {
   append: (bars: Bar[]) => void;
 };
 
-const UP = "#26a69a";
-const DOWN = "#ef5350";
+const UP = "#089981";
+const DOWN = "#f23645";
 // Indicator colours: categorical slots validated against the chart surface #121923
 // (dataviz validate_palette: CVD ΔE >= 13, contrast >= 3:1). Bollinger Bands are one
 // entity drawn as a neutral dashed envelope; MACD/signal reuse the validated blue/orange pair.
-const COLOURS = { sma20: "#c98500", ema9: "#9085e9", vwap: "#d55181", bb: "#8b96a5", line: "#3987e5", signal: "#d95926" };
+const COLOURS = { sma20: "#c98500", ema9: "#9085e9", vwap: "#d55181", bb: "#7d848e", line: "#3987e5", signal: "#d95926" };
 
 type Timeframe = "1m" | "5m" | "15m" | "1h" | HistoryInterval;
 const TIMEFRAMES: { key: Timeframe; label: string; minutes?: number }[] = [
@@ -219,14 +219,15 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       autoSize: true,
       layout: {
         background: { color: "transparent" },
-        textColor: "#9aa4b2",
+        textColor: "#7d848e",
         fontFamily: "Inter, system-ui, sans-serif",
+        fontSize: 11,
         attributionLogo: true, // TradingView attribution, required by the licence
-        panes: { separatorColor: "#2a3441" },
+        panes: { separatorColor: "#24282e" },
       },
-      grid: { vertLines: { color: "#1c2430" }, horzLines: { color: "#1c2430" } },
-      rightPriceScale: { borderColor: "#2a3441" },
-      timeScale: { borderColor: "#2a3441", timeVisible: true, secondsVisible: false },
+      grid: { vertLines: { color: "#16191d" }, horzLines: { color: "#16191d" } },
+      rightPriceScale: { borderColor: "#24282e" },
+      timeScale: { borderColor: "#24282e", timeVisible: true, secondsVisible: false },
       // On a page that scrolls, the wheel should move the page, not hijack the chart.
       handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
