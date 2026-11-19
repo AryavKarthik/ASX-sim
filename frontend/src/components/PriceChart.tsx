@@ -27,6 +27,7 @@ import {
   vwap,
   withToday,
 } from "../live/indicators";
+import { MAX_BAR_SPACING, MIN_BAR_SPACING, canStep, steppedSpacing } from "./zoom";
 
 export type PriceChartHandle = {
   /** Replace the day's 1-minute candles (used for the first snapshot and symbol changes). */
@@ -131,6 +132,16 @@ const line = (color: string, title: string, extra: object = {}) => ({
 
 type Props = { ref: Ref<PriceChartHandle>; symbol: string; sessionDay: string | null };
 
+/** Arrows pointing out (wider) or in (thinner), drawn on a 16px grid. */
+function ZoomIcon({ direction }: { direction: 1 | -1 }) {
+  const d = direction > 0 ? "M1 8h4M11 8h4M1 8l2-2M1 8l2 2M15 8l-2-2M15 8l-2 2M8 3v10" : "M1 8h5M10 8h5M6 8L4 6M6 8l-2 2M10 8l2-2M10 8l2 2M8 3v10";
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d={d} />
+    </svg>
+  );
+}
+
 /** Candlesticks with volume, timeframes and indicators, drawn by TradingView Lightweight Charts. */
 export function PriceChart({ ref, symbol, sessionDay }: Props) {
   const container = useRef<HTMLDivElement>(null);
@@ -140,6 +151,9 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
   const history = useRef<Bar[] | null>(null); // long-timeframe bars before today; null = loading
   const lastCount = useRef(0);
   const drawingRef = useRef<DrawingController | null>(null);
+  // Once you zoom, new candles stop re-framing the chart until you reset or switch timeframe.
+  const zoomed = useRef(false);
+  const [spacing, setSpacing] = useState(DEFAULT_BAR_SPACING);
 
   const [timeframe, setTimeframe] = useState<Timeframe>(() =>
     load(TF_KEY, "1m", (v) => TIMEFRAMES.some((t) => t.key === v)),
@@ -201,8 +215,9 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       );
     }
 
+    if (reframe) zoomed.current = false;
     if (view.current.minutes != null) {
-      if (reframe || data.length !== lastCount.current) {
+      if (reframe || (data.length !== lastCount.current && !zoomed.current)) {
         if (reframe && data.length > FIT_UNTIL_BARS) c.chart.timeScale().fitContent();
         else frame(c.chart, data.length);
       }
@@ -232,6 +247,7 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       handleScroll: { mouseWheel: false, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
       handleScale: { mouseWheel: false, pinch: true, axisPressedMouseMove: true, axisDoubleClickReset: true },
     });
+    chart.timeScale().applyOptions({ minBarSpacing: MIN_BAR_SPACING, maxBarSpacing: MAX_BAR_SPACING });
     const candles = chart.addSeries(CandlestickSeries, {
       upColor: UP,
       downColor: DOWN,
@@ -269,11 +285,23 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       const from = anchor - (anchor - range.from) * factor;
       const to = anchor + (range.to - anchor) * factor;
       if (to - from < 5) return; // don't zoom in past a handful of bars
+      zoomed.current = true;
       timeScale.setVisibleLogicalRange({ from, to });
     };
     container.current!.addEventListener("wheel", zoom, { passive: false });
+    // Dragging the time axis also stretches the candles; keep that zoom as well.
+    const axisDrag = (event: PointerEvent) => {
+      const box = container.current!.getBoundingClientRect();
+      if (event.clientY > box.bottom - chart.timeScale().height()) zoomed.current = true;
+    };
+    container.current!.addEventListener("pointerdown", axisDrag);
+    // Keep the buttons' enabled state in step with however the zoom changed.
+    const track = () => setSpacing(chart.timeScale().options().barSpacing);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(track);
     setDrawing(controller);
     return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(track);
+      container.current?.removeEventListener("pointerdown", axisDrag);
       container.current?.removeEventListener("wheel", zoom);
       controller.destroy();
       drawingRef.current = null;
@@ -396,6 +424,22 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
     save(IND_KEY, next);
   }
 
+  /** Make the candles wider (+1) or thinner (−1), keeping the latest candle in place. */
+  function stepZoom(direction: 1 | -1) {
+    const timeScale = core.current?.chart.timeScale();
+    if (!timeScale) return;
+    zoomed.current = true;
+    const next = steppedSpacing(timeScale.options().barSpacing, direction);
+    timeScale.applyOptions({ barSpacing: next });
+    setSpacing(next);
+  }
+
+  function resetZoom() {
+    draw(true);
+    const timeScale = core.current?.chart.timeScale();
+    if (timeScale) setSpacing(timeScale.options().barSpacing);
+  }
+
   function chooseTimeframe(key: Timeframe) {
     setTimeframe(key);
     save(TF_KEY, key);
@@ -404,17 +448,33 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
   return (
     <div className={`price-chart panes-${shown.filter((k) => k === "rsi" || k === "macd").length}`}>
       <div className="chart-toolbar">
-        <div className="tf" role="group" aria-label="Timeframe">
-          {TIMEFRAMES.map((t) => (
-            <button
-              key={t.key}
-              className={timeframe === t.key ? "active" : ""}
-              onClick={() => chooseTimeframe(t.key)}
-              title={t.minutes ? `${t.minutes}-minute candles from today's session` : `${t.key === "1d" ? "Daily" : t.key === "1wk" ? "Weekly" : "Monthly"} candles with long-term history`}
-            >
-              {t.label}
+        <div className="toolbar-left">
+          <div className="tf" role="group" aria-label="Timeframe">
+            {TIMEFRAMES.map((t) => (
+              <button
+                key={t.key}
+                className={timeframe === t.key ? "active" : ""}
+                onClick={() => chooseTimeframe(t.key)}
+                title={t.minutes ? `${t.minutes}-minute candles from today's session` : `${t.key === "1d" ? "Daily" : t.key === "1wk" ? "Weekly" : "Monthly"} candles with long-term history`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+          <div className="tf zoom" role="group" aria-label="Horizontal zoom">
+            <button onClick={() => stepZoom(-1)} disabled={!canStep(spacing, -1)} title="Thinner candles: fit more time on the chart" aria-label="Zoom out (thinner candles)">
+              <ZoomIcon direction={-1} />
             </button>
-          ))}
+            <button onClick={() => stepZoom(1)} disabled={!canStep(spacing, 1)} title="Wider candles: see fewer, bigger candles" aria-label="Zoom in (wider candles)">
+              <ZoomIcon direction={1} />
+            </button>
+            <button
+              onClick={resetZoom}
+              title="Reset the zoom. Tip: you can also drag the time axis under the chart left or right to stretch it, or hold Ctrl and scroll."
+            >
+              Reset
+            </button>
+          </div>
         </div>
         <div className="studies" role="group" aria-label="Indicators">
           {INDICATORS.map((i) => {

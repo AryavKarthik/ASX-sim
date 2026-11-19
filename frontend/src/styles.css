@@ -777,6 +777,18 @@ tr.selected-row {
   gap: 8px;
 }
 
+.chart-toolbar .toolbar-left {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.chart-toolbar .zoom {
+  padding-left: 12px;
+  border-left: 1px solid var(--border);
+}
+
 .chart-toolbar .tf,
 .chart-toolbar .studies {
   display: flex;
