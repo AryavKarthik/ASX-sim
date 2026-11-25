@@ -4216,3 +4216,491 @@ button.small {
 .hero-value .big-price {
   font-size: 26px;
 }
+
+/*  ========== risk planner ==========  */
+
+.plan-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-width: 96px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.12s var(--ease), background 0.12s var(--ease);
+}
+
+.plan-button:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.planner-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.planner-head {
+  align-items: flex-end;
+}
+
+.planner-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 16px;
+  align-items: stretch;
+}
+
+.planner-chart-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.planner-chart-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.planner-symbol {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.planner-symbol:hover {
+  color: var(--accent-hover);
+}
+
+.planner-live {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.planner-price {
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.drag-hint {
+  margin: 0;
+}
+
+.plan-chart {
+  flex: 1 1 auto;
+  min-height: 520px;
+  position: relative;
+  /* The chart sizes itself to this box; without containment its canvas would make the box
+     taller, which makes the chart taller, and so on. */
+  contain: size;
+}
+
+.plan-chart.over-line {
+  cursor: ns-resize;
+}
+
+.plan-chart.dragging,
+.plan-chart.dragging * {
+  cursor: grabbing !important;
+}
+
+.plan-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+
+.plan-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plan-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.plan-legend i.zone {
+  height: 10px;
+  border-radius: 2px;
+}
+
+.plan-legend i.zone.up {
+  background: var(--up-soft);
+  border: 1px solid rgba(8, 153, 129, 0.5);
+}
+
+.plan-legend i.zone.down {
+  background: var(--down-soft);
+  border: 1px solid rgba(242, 54, 69, 0.5);
+}
+
+.planner-side {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.plan-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.price-field,
+.risk-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.level-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 7px;
+  border-radius: 50%;
+  vertical-align: 1px;
+}
+
+.stepper {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) 38px;
+  gap: 6px;
+}
+
+.stepper input {
+  width: 100%;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.stepper button {
+  padding: 0;
+  font-size: 17px;
+  line-height: 1;
+}
+
+.risk-row .input-row input {
+  width: auto;
+  min-width: 0;
+  flex: 1 1 0;
+}
+
+.risk-row .segmented.unit button {
+  white-space: nowrap;
+  padding: 6px 9px;
+}
+
+.link-button {
+  align-self: flex-start;
+  margin-top: -6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-hover);
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration: underline;
+}
+
+.active-soft {
+  color: var(--muted);
+}
+
+.plan-results {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.result-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.result.loss {
+  background: var(--down-soft);
+  border-color: rgba(242, 54, 69, 0.28);
+}
+
+.result.gain {
+  background: var(--up-soft);
+  border-color: rgba(8, 153, 129, 0.28);
+}
+
+.result strong {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ratio-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ratio-row > div:first-child {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.ratio-row strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+
+.ratio-bar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--panel-2);
+}
+
+.ratio-bar i {
+  display: block;
+  min-width: 4px;
+  transition: flex-grow 0.25s var(--ease);
+}
+
+.ratio-bar i.up {
+  background: var(--up);
+}
+
+.ratio-bar i.down {
+  background: var(--down);
+}
+
+.place-plan {
+  height: 44px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.planner-lower {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.notebook {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notebook label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.notebook textarea {
+  resize: vertical;
+  min-height: 120px;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notebook-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.notebook-head .panel-title {
+  margin: 0;
+}
+
+.notebook-row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.checklist-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.checklist ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checklist li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.checklist li:hover {
+  background: var(--hover);
+}
+
+.notebook .checklist label.check {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.check input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  accent-color: var(--up);
+  flex: none;
+}
+
+.check input:checked + span {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-strong);
+}
+
+.checklist li .icon-button {
+  opacity: 0;
+}
+
+.checklist li:hover .icon-button,
+.checklist li .icon-button:focus-visible {
+  opacity: 1;
+}
+
+.checklist .input-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.notebook-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.what-if {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.what-if-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.what-if-readout strong {
+  font-size: 24px;
+}
+
+.what-if-pnl {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.what-if-slider {
+  width: 100%;
+  accent-color: #9aa3ad;
+  padding: 0;
+  border: 0;
+  box-shadow: none !important;
+  background: transparent;
+}
+
+.scenarios tr.selected td,
+.saved-plans tr.selected td {
+  background: var(--accent-soft);
+}
+
+.saved-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.small-button.danger {
+  background: var(--down);
+  border-color: var(--down);
+  color: #fff;
+}
+
+@media (max-width: 1100px) {
+  .planner-grid,
+  .planner-lower {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .plan-chart {
+    min-height: 420px;
+  }
+}
+
+@media (max-width: 640px) {
+  .notebook-row,
+  .result-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

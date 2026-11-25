@@ -98,6 +98,20 @@ running 20 minutes behind.**
     prices, labelled on the price axis), trend lines and rays. Drag to move, drag an end to
     adjust, Delete to remove. Lines are anchored to time and price, so they stay in place
     across zooming and every timeframe, and each stock keeps its own (saved in your browser).
+- **Risk planner** (`#/planner`, or the Plan button on any stock page):
+  - drag entry, stop-loss and target lines on the chart (or type them, with one-step −/+
+    buttons); the profit and loss zones are shaded green and red,
+  - position sizing from the risk you choose (a % of your account or a dollar amount), so
+    hitting the stop loses about that much **including brokerage both ways**, capped by
+    buying power,
+  - max loss, potential gain, reward-to-risk, the win rate you'd need to break even,
+    breakeven price, position size as a share of the account, and plain-English warnings
+    (more than 2% at risk, target closer than the stop, under the $500 first-parcel minimum),
+  - a "what if it goes to…" slider and line, plus a ladder of outcomes at the stop, +1R,
+    +2R, +3R, breakeven and the target,
+  - a notebook (name, setup, notes and an editable pre-trade checklist) with saved plans
+    kept beside your account, and **Place this trade**, which fills in the order ticket with
+    the plan attached to the journal.
 - **Trade journal:**
   - fills are grouped into round-trip trades automatically,
   - write your plan (setup, reason, stop, target) on the order ticket and see the risk/reward
@@ -266,10 +280,11 @@ outside the repository.
 | Tests | `uv run pytest --cov=asxsim` | `npm test` |
 | Build | | `npm run build` |
 
-CI runs all of these, plus a secret scan, on every pull request. The backend has over 300
+CI runs all of these, plus a secret scan, on every pull request. The backend has over 330
 tests at about 90% coverage; none of them touch the network or need an API key (Yahoo and
-Claude sit behind small interfaces with stand-ins). The frontend's 45 tests cover the
-indicator, valuation-ratio, drawing-placement, bid/ask-estimate and day-P&L maths.
+Claude sit behind small interfaces with stand-ins). The frontend's 63 tests cover the
+indicator, valuation-ratio, drawing-placement, chart-zoom, bid/ask-estimate, day-P&L and
+risk-planner maths.
 
 Pre-commit hooks run these checks, plus a secret scanner, on every commit:
 `uv tool install pre-commit && pre-commit install`.
@@ -297,7 +312,9 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 - [x] **After v1.0:** broker-depth stock pages (course of sales, bid/ask, overview, financials, dividends, analysts, ownership), today's P&L, a new logo
 - [x] **After v1.0:** professional visual pass: neutral palette, Inter, flat sections, dotted-underline term tips, price flashes and subtle motion (respects reduced-motion)
 - [x] **Housekeeping → `v1.1`:** Block's ASX code corrected (XYZ), four delisted ASX 200 members removed, the three stylesheets merged into one design system with dead rules removed, screenshots and docs refreshed, the coach's full review verified against the real API
-- [ ] **Next:** risk tools (a position-size calculator on the ticket, bracket orders, price alerts including on drawn lines), discipline guardrails (daily loss limit, trade limit), a market scanner, trade replay from the journal
+- [x] **After v1.1:** chart zoom buttons (wider/thinner candles) that keep your zoom as new candles arrive
+- [x] **After v1.1:** risk planner: draggable entry/stop/target on a chart, position sizing from your risk with brokerage, what-if outcomes, a notebook with a pre-trade checklist and saved plans, and one click to fill the order ticket
+- [ ] **Next:** risk tools (bracket orders that place the planner's stop and target with the entry, price alerts including on drawn lines), discipline guardrails (daily loss limit, trade limit), a market scanner, trade replay from the journal
 - [ ] **Quality:** automated browser tests in CI, a tested phone layout, keyboard shortcuts
 - [ ] **Secondary:** trading inside past-day replay
 - [ ] **Later:** real-time data provider, short selling and margin, dividends and franking credits in the account, ASX options, the four delisted ASX 200 members' replacements once a current constituent list can be confirmed

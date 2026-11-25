@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { INDEX, priceOf, useMarket } from "../app/market";
+import { plannerPath } from "../app/router";
 import { Change, FlashPrice, Icon, Label, Skeleton, compactNumber, money, pct, tone } from "../app/ui";
 import { PriceChart, type PriceChartHandle } from "../components/PriceChart";
 import { formatDay, formatPrice } from "../format";
@@ -139,6 +140,9 @@ export function StockPage({ symbol }: { symbol: string }) {
             <button className="sell-button" onClick={() => openTicket("sell")} disabled={!position}>
               Sell
             </button>
+            <a className="plan-button" href={`#${plannerPath(symbol)}`} title="Work out the risk and reward of a trade in this stock before you place it">
+              <Icon name="planner" size={16} /> Plan
+            </a>
           </div>
         )}
       </header>

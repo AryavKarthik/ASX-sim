@@ -23,6 +23,7 @@ from pydantic import BaseModel, Field
 
 from asxsim.api.deps import get_store
 from asxsim.api.live import router as live_router
+from asxsim.api.plans import router as plans_router
 from asxsim.api.swing import router as swing_router
 from asxsim.data.store import LocalBarStore, NoDataError
 from asxsim.data.universe import BENCHMARKS, security_names
@@ -35,6 +36,7 @@ MAX_SESSIONS = 20
 app = FastAPI(title="ASX-sim API", version="1.1.0")
 app.include_router(live_router)
 app.include_router(swing_router)
+app.include_router(plans_router)
 
 __all__ = ["app", "get_store"]
 

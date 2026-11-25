@@ -5,6 +5,7 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { type Bar, fetchDays } from "../api";
+import type { TicketPrefill } from "../live/OrderTicket";
 import type { CommandResult, Defaults, FeedSource, JournalEntry, OrderCommand, Quote } from "../live/types";
 import { type LiveFeed, useLiveFeed } from "../live/useLiveFeed";
 
@@ -21,7 +22,8 @@ export const INDEX = "XJO";
 
 type CandleListener = (symbol: string, candle: Bar) => void;
 
-export type TradeTarget = { symbol: string; side: "buy" | "sell" };
+/** The trade panel's stock, and optionally an order filled in from the risk planner. */
+export type TradeTarget = { symbol: string; side: "buy" | "sell"; prefill?: TicketPrefill; opened: number };
 
 export type Market = {
   defaults: Defaults;
@@ -42,7 +44,7 @@ export type Market = {
   onCandle: (listener: CandleListener) => () => void;
   onSnapshot: (listener: () => void) => () => void;
   /** Open the trade panel for a stock. */
-  trade: (symbol: string, side?: "buy" | "sell") => void;
+  trade: (symbol: string, side?: "buy" | "sell", prefill?: TicketPrefill) => void;
   tradeTarget: TradeTarget | null;
   closeTrade: () => void;
   lastViewed: string;
@@ -171,7 +173,7 @@ export function MarketProvider({ defaults, children }: { defaults: Defaults; chi
       snapshotListeners.current.add(listener);
       return () => snapshotListeners.current.delete(listener);
     }, []) as Market["onSnapshot"],
-    trade: (symbol, side = "buy") => setTradeTarget({ symbol, side }),
+    trade: (symbol, side = "buy", prefill) => setTradeTarget({ symbol, side, prefill, opened: Date.now() }),
     tradeTarget,
     closeTrade: () => setTradeTarget(null),
     lastViewed,
