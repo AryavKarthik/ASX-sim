@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import type { Phase } from "../api";
 import { formatPrice } from "../format";
@@ -30,7 +30,11 @@ type Props = {
   initialSide?: "buy" | "sell";
   /** Inside a panel that already shows the stock: no header or card border. */
   compact?: boolean;
+  /** Start filled in, e.g. from a risk-planner plan. */
+  prefill?: TicketPrefill;
 };
+
+export type TicketPrefill = { quantity?: number; kind?: OrderKind; limit?: string; plan?: TradePlan };
 
 function money(value: number): string {
   return value.toLocaleString("en-AU", { style: "currency", currency: "AUD" });
@@ -70,13 +74,13 @@ function num(text: string): number | null {
   return Number.isFinite(n) && n > 0 ? n : null;
 }
 
-export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, halted, journalOptions, onSubmit, initialSide = "buy", compact = false }: Props) {
-  const [planOpen, setPlanOpen] = useState(false);
-  const [plan, setPlan] = useState<TradePlan>({});
+export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, halted, journalOptions, onSubmit, initialSide = "buy", compact = false, prefill }: Props) {
+  const [planOpen, setPlanOpen] = useState(prefill?.plan != null);
+  const [plan, setPlan] = useState<TradePlan>(prefill?.plan ?? {});
   const [side, setSide] = useState<"buy" | "sell">(initialSide);
-  const [kind, setKind] = useState<OrderKind>("market");
-  const [quantity, setQuantity] = useState("");
-  const [limit, setLimit] = useState("");
+  const [kind, setKind] = useState<OrderKind>(prefill?.kind ?? "market");
+  const [quantity, setQuantity] = useState(prefill?.quantity ? String(prefill.quantity) : "");
+  const [limit, setLimit] = useState(prefill?.limit ?? "");
   const [trigger, setTrigger] = useState("");
   const [trail, setTrail] = useState("");
   const [trailUnit, setTrailUnit] = useState<"$" | "%">("%");
@@ -84,8 +88,11 @@ export function OrderTicket({ symbol, name, quote, lastPrice, account, phase, ha
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
-  // A new stock starts with a fresh ticket.
+  // A new stock starts with a fresh ticket (skipped on first render, so a prefill survives).
+  const shownSymbol = useRef(symbol);
   useEffect(() => {
+    if (shownSymbol.current === symbol) return;
+    shownSymbol.current = symbol;
     setQuantity("");
     setLimit("");
     setTrigger("");

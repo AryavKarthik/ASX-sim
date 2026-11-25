@@ -3,11 +3,11 @@
 
 import { useEffect, useState } from "react";
 
-export type Page = "home" | "watchlist" | "stock" | "portfolio" | "coach" | "swing" | "replay";
+export type Page = "home" | "watchlist" | "stock" | "portfolio" | "planner" | "coach" | "swing" | "replay";
 
 export type Route = { page: Page; symbol?: string; tab?: string };
 
-const PAGES: Page[] = ["home", "watchlist", "stock", "portfolio", "coach", "swing", "replay"];
+const PAGES: Page[] = ["home", "watchlist", "stock", "portfolio", "planner", "coach", "swing", "replay"];
 
 export function parseRoute(hash: string): Route {
   const parts = hash.replace(/^#\/?/, "").split("/").filter(Boolean);
@@ -17,6 +17,7 @@ export function parseRoute(hash: string): Route {
     const symbol = (parts[1] ?? "").toUpperCase();
     return symbol ? { page, symbol } : { page: "watchlist" };
   }
+  if (page === "planner") return parts[1] ? { page, symbol: parts[1].toUpperCase() } : { page };
   return parts[1] ? { page, tab: parts[1] } : { page };
 }
 
@@ -38,3 +39,4 @@ export function go(path: string): void {
 }
 
 export const stockPath = (symbol: string) => `/stock/${symbol}`;
+export const plannerPath = (symbol?: string) => (symbol ? `/planner/${symbol}` : "/planner");

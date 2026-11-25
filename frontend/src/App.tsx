@@ -7,6 +7,7 @@ import { Shell } from "./app/Shell";
 import type { Defaults } from "./live/types";
 import { HomePage } from "./pages/HomePage";
 import { CoachPage, ReplayPage } from "./pages/OtherPages";
+import { PlannerPage } from "./pages/PlannerPage";
 import { PortfolioPage } from "./pages/PortfolioPage";
 import { StockPage } from "./pages/StockPage";
 import { WatchlistPage } from "./pages/WatchlistPage";
@@ -49,6 +50,7 @@ function Routed() {
       {route.page === "watchlist" && <WatchlistPage />}
       {route.page === "stock" && route.symbol && <StockPage symbol={route.symbol} />}
       {route.page === "portfolio" && <PortfolioPage tab={route.tab} />}
+      {route.page === "planner" && <PlannerPage symbol={route.symbol} />}
       {route.page === "coach" && <CoachPage />}
       {route.page === "swing" && <SwingView />}
       {route.page === "replay" && <ReplayPage />}

@@ -11,6 +11,7 @@ const NAV: { page: Page; path: string; label: string; icon: string }[] = [
   { page: "home", path: "/", label: "Home", icon: "home" },
   { page: "watchlist", path: "/watchlist", label: "Watchlist", icon: "watchlist" },
   { page: "portfolio", path: "/portfolio", label: "Portfolio", icon: "portfolio" },
+  { page: "planner", path: "/planner", label: "Planner", icon: "planner" },
   { page: "coach", path: "/coach", label: "Coach", icon: "coach" },
   { page: "swing", path: "/swing", label: "Practice", icon: "swing" },
   { page: "replay", path: "/replay", label: "Replay", icon: "replay" },
@@ -275,7 +276,7 @@ function TradeDrawer() {
     return () => window.removeEventListener("keydown", onKey);
   }, [tradeTarget, closeTrade]);
   if (!tradeTarget) return null;
-  const { symbol, side } = tradeTarget;
+  const { symbol, side, prefill, opened } = tradeTarget;
   const quote = feed.quotes[symbol];
   const shown = priceOf(quote, feed.candlesFor(symbol));
   return (
@@ -298,7 +299,7 @@ function TradeDrawer() {
           <Change change={shown.change} percent={shown.pct} price={shown.price} />
         </div>
         <OrderTicket
-          key={`${symbol}-${side}`}
+          key={`${symbol}-${side}-${opened}`}
           symbol={symbol}
           name={names[symbol] ?? ""}
           quote={quote}
@@ -309,6 +310,7 @@ function TradeDrawer() {
           journalOptions={defaults.journal}
           onSubmit={placeOrder}
           initialSide={side}
+          prefill={prefill}
           compact
         />
       </aside>
