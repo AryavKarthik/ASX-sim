@@ -2,6 +2,7 @@
 
 export const MIN_BAR_SPACING = 1; // thinnest: about 1px per candle, a long stretch of history
 export const MAX_BAR_SPACING = 60; // widest: a handful of fat candles
+export const DEFAULT_BAR_SPACING = 8; // the chart library's own default
 export const ZOOM_STEP = 1.35; // each click makes candles about a third wider or thinner
 
 /** The bar spacing after one step wider (+1) or thinner (−1), kept within sensible limits. */

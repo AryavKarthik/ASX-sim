@@ -27,7 +27,8 @@ import {
   vwap,
   withToday,
 } from "../live/indicators";
-import { MAX_BAR_SPACING, MIN_BAR_SPACING, canStep, steppedSpacing } from "./zoom";
+import { ZoomControls, attachZoom } from "./ZoomControls";
+import { DEFAULT_BAR_SPACING, MAX_BAR_SPACING, MIN_BAR_SPACING, steppedSpacing } from "./zoom";
 
 export type PriceChartHandle = {
   /** Replace the day's 1-minute candles (used for the first snapshot and symbol changes). */
@@ -90,7 +91,6 @@ function save(key: string, value: unknown) {
 // fill the chart; after that it scrolls like a live feed (and you can zoom or pan freely).
 const FIT_FROM_BARS = 40;
 const FIT_UNTIL_BARS = 120;
-const DEFAULT_BAR_SPACING = 8;
 const LONG_VIEW_BARS = 150; // daily/weekly/monthly open on roughly this many recent bars
 
 function frame(chart: IChartApi, count: number) {
@@ -131,16 +131,6 @@ const line = (color: string, title: string, extra: object = {}) => ({
 });
 
 type Props = { ref: Ref<PriceChartHandle>; symbol: string; sessionDay: string | null };
-
-/** Arrows pointing out (wider) or in (thinner), drawn on a 16px grid. */
-function ZoomIcon({ direction }: { direction: 1 | -1 }) {
-  const d = direction > 0 ? "M1 8h4M11 8h4M1 8l2-2M1 8l2 2M15 8l-2-2M15 8l-2 2M8 3v10" : "M1 8h5M10 8h5M6 8L4 6M6 8l-2 2M10 8l2-2M10 8l2 2M8 3v10";
-  return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d={d} />
-    </svg>
-  );
-}
 
 /** Candlesticks with volume, timeframes and indicators, drawn by TradingView Lightweight Charts. */
 export function PriceChart({ ref, symbol, sessionDay }: Props) {
@@ -272,37 +262,10 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
       setDrawState,
     );
     drawingRef.current = controller;
-    // Ctrl + wheel (a trackpad pinch also sends this) zooms around the pointer.
-    const zoom = (event: WheelEvent) => {
-      if (!event.ctrlKey && !event.metaKey) return;
-      event.preventDefault();
-      const timeScale = chart.timeScale();
-      const range = timeScale.getVisibleLogicalRange();
-      if (!range) return;
-      const box = container.current!.getBoundingClientRect();
-      const anchor = timeScale.coordinateToLogical(event.clientX - box.left) ?? (range.from + range.to) / 2;
-      const factor = Math.exp(event.deltaY * 0.0025);
-      const from = anchor - (anchor - range.from) * factor;
-      const to = anchor + (range.to - anchor) * factor;
-      if (to - from < 5) return; // don't zoom in past a handful of bars
-      zoomed.current = true;
-      timeScale.setVisibleLogicalRange({ from, to });
-    };
-    container.current!.addEventListener("wheel", zoom, { passive: false });
-    // Dragging the time axis also stretches the candles; keep that zoom as well.
-    const axisDrag = (event: PointerEvent) => {
-      const box = container.current!.getBoundingClientRect();
-      if (event.clientY > box.bottom - chart.timeScale().height()) zoomed.current = true;
-    };
-    container.current!.addEventListener("pointerdown", axisDrag);
-    // Keep the buttons' enabled state in step with however the zoom changed.
-    const track = () => setSpacing(chart.timeScale().options().barSpacing);
-    chart.timeScale().subscribeVisibleLogicalRangeChange(track);
+    const detachZoom = attachZoom(chart, container.current!, () => (zoomed.current = true), setSpacing);
     setDrawing(controller);
     return () => {
-      chart.timeScale().unsubscribeVisibleLogicalRangeChange(track);
-      container.current?.removeEventListener("pointerdown", axisDrag);
-      container.current?.removeEventListener("wheel", zoom);
+      detachZoom();
       controller.destroy();
       drawingRef.current = null;
       chart.remove();
@@ -461,20 +424,7 @@ export function PriceChart({ ref, symbol, sessionDay }: Props) {
               </button>
             ))}
           </div>
-          <div className="tf zoom" role="group" aria-label="Horizontal zoom">
-            <button onClick={() => stepZoom(-1)} disabled={!canStep(spacing, -1)} title="Thinner candles: fit more time on the chart" aria-label="Zoom out (thinner candles)">
-              <ZoomIcon direction={-1} />
-            </button>
-            <button onClick={() => stepZoom(1)} disabled={!canStep(spacing, 1)} title="Wider candles: see fewer, bigger candles" aria-label="Zoom in (wider candles)">
-              <ZoomIcon direction={1} />
-            </button>
-            <button
-              onClick={resetZoom}
-              title="Reset the zoom. Tip: you can also drag the time axis under the chart left or right to stretch it, or hold Ctrl and scroll."
-            >
-              Reset
-            </button>
-          </div>
+          <ZoomControls spacing={spacing} onStep={stepZoom} onReset={resetZoom} />
         </div>
         <div className="studies" role="group" aria-label="Indicators">
           {INDICATORS.map((i) => {

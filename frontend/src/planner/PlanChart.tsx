@@ -17,9 +17,11 @@ import {
   type UTCTimestamp,
   createChart,
 } from "lightweight-charts";
-import { useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 import type { Bar } from "../api";
+import { ZoomControls, attachZoom } from "../components/ZoomControls";
+import { DEFAULT_BAR_SPACING, MAX_BAR_SPACING, MIN_BAR_SPACING, steppedSpacing } from "../components/zoom";
 import { snap } from "./risk";
 
 export type LevelKey = "entry" | "stop" | "target" | "whatIf";
@@ -93,9 +95,23 @@ type Props = {
   intraday: boolean;
   levels: Levels;
   onChange: (key: LevelKey, price: number) => void;
+  /** Controls shown before the zoom buttons (the timeframes). */
+  toolbar?: ReactNode;
+  /** Text at the right of the toolbar. */
+  hint?: ReactNode;
 };
 
-export function PlanChart({ bars, intraday, levels, onChange }: Props) {
+/** A short day fills the chart; a long history opens on its most recent bars. */
+function frame(chart: IChartApi, count: number, intraday: boolean) {
+  const show = intraday ? 90 : 120;
+  if (count <= show) chart.timeScale().fitContent();
+  else chart.timeScale().setVisibleLogicalRange({ from: count - show, to: count + 6 });
+}
+
+export function PlanChart({ bars, intraday, levels, onChange, toolbar, hint }: Props) {
+  const [spacing, setSpacing] = useState(DEFAULT_BAR_SPACING);
+  const view = useRef({ count: bars.length, intraday });
+  view.current = { count: bars.length, intraday };
   const box = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
@@ -143,6 +159,9 @@ export function PlanChart({ bars, intraday, levels, onChange }: Props) {
         return { priceRange: { minValue: min, maxValue: max } };
       },
     });
+    chart.timeScale().applyOptions({ minBarSpacing: MIN_BAR_SPACING, maxBarSpacing: MAX_BAR_SPACING });
+    // The planner only re-frames when the timeframe changes, so any zoom already stays put.
+    const detachZoom = attachZoom(chart, container, () => undefined, setSpacing);
     chartRef.current = chart;
     seriesRef.current = series;
     const layer = new Zones(() => seriesRef.current, () => levelsRef.current);
@@ -206,6 +225,7 @@ export function PlanChart({ bars, intraday, levels, onChange }: Props) {
     container.addEventListener("pointermove", onHover);
 
     return () => {
+      detachZoom();
       onUp();
       container.removeEventListener("pointerdown", onDown, { capture: true });
       for (const kind of ["mousedown", "touchstart"] as const) container.removeEventListener(kind, onSwallow, { capture: true });
@@ -229,13 +249,8 @@ export function PlanChart({ bars, intraday, levels, onChange }: Props) {
     const kind = `${intraday}:${bars.length > 0 ? bars[0].time : ""}`;
     if (bars.length > 0 && framed.current !== kind) {
       framed.current = kind;
-      const show = intraday ? 90 : 120;
-      // After layout, so the chart knows its width: a short day fills the chart, a long history
-      // opens on its most recent bars.
-      requestAnimationFrame(() => {
-        if (bars.length <= show) chart.timeScale().fitContent();
-        else chart.timeScale().setVisibleLogicalRange({ from: bars.length - show, to: bars.length + 6 });
-      });
+      // After layout, so the chart knows its width.
+      requestAnimationFrame(() => frame(chart, bars.length, intraday));
     }
   }, [bars, intraday]);
 
@@ -266,5 +281,31 @@ export function PlanChart({ bars, intraday, levels, onChange }: Props) {
     zones.current?.redraw();
   }, [levels]);
 
-  return <div className="plan-chart" ref={box} />;
+  function stepZoom(direction: 1 | -1) {
+    const timeScale = chartRef.current?.timeScale();
+    if (!timeScale) return;
+    const next = steppedSpacing(timeScale.options().barSpacing, direction);
+    timeScale.applyOptions({ barSpacing: next });
+    setSpacing(next);
+  }
+
+  function resetZoom() {
+    const chart = chartRef.current;
+    if (!chart) return;
+    frame(chart, view.current.count, view.current.intraday);
+    setSpacing(chart.timeScale().options().barSpacing);
+  }
+
+  return (
+    <>
+      <div className="chart-toolbar">
+        <div className="toolbar-left">
+          {toolbar}
+          <ZoomControls spacing={spacing} onStep={stepZoom} onReset={resetZoom} />
+        </div>
+        {hint}
+      </div>
+      <div className="plan-chart" ref={box} />
+    </>
+  );
 }

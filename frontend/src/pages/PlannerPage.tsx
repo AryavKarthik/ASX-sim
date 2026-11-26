@@ -372,17 +372,22 @@ export function PlannerPage({ symbol: routeSymbol }: { symbol?: string }) {
               <Change change={shown.change} percent={shown.pct} price={live} />
             </div>
           </div>
-          <div className="chart-toolbar">
-            <div className="tf" role="group" aria-label="Timeframe">
-              {TIMEFRAMES.map((t) => (
-                <button key={t.key} className={timeframe === t.key ? "active" : ""} onClick={() => setTimeframe(t.key)} disabled={t.minutes != null && intradayEmpty}>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <p className="muted small-text drag-hint">Drag the coloured lines up or down to move them.</p>
-          </div>
-          <PlanChart bars={bars} intraday={!daily} levels={levels} onChange={moveLevel} />
+          <PlanChart
+            bars={bars}
+            intraday={!daily}
+            levels={levels}
+            onChange={moveLevel}
+            toolbar={
+              <div className="tf" role="group" aria-label="Timeframe">
+                {TIMEFRAMES.map((t) => (
+                  <button key={t.key} className={timeframe === t.key ? "active" : ""} onClick={() => setTimeframe(t.key)} disabled={t.minutes != null && intradayEmpty}>
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            }
+            hint={<p className="muted small-text drag-hint">Drag the coloured lines up or down to move them. Hold Ctrl and scroll to zoom.</p>}
+          />
           <div className="plan-legend">
             {(Object.keys(LEVEL_STYLE) as LevelKey[]).map((k) => (
               <span key={k}>
